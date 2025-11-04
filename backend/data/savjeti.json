@@ -1,0 +1,19 @@
+[
+  {
+    "id": 1,
+    "question": "praksa na feru",
+    "tags": [
+      "FER"
+    ],
+    "replies": [
+      {
+        "username": "jana",
+        "reply": "prijavi se"
+      },
+      {
+        "username": "marko",
+        "reply": "ok"
+      }
+    ]
+  }
+]

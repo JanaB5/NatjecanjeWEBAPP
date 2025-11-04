@@ -8,6 +8,9 @@ import Mentorships from "./pages/Mentorships";
 import About from "./pages/About";
 import Connect from "./pages/Connect";
 import AIFloatingChat from "./components/AIFloatingChat";
+import Login from "./pages/Login";
+import Dashboard from "./pages/Dashboard";
+import Register from "./pages/Register";
 
 function App() {
   return (
@@ -23,6 +26,9 @@ function App() {
             <Route path="/mentorships" element={<Mentorships />} />
             <Route path="/about" element={<About />} />
             <Route path="/connect" element={<Connect />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/register" element={<Register />} />
           </Routes>
         </div>
         <AIFloatingChat />

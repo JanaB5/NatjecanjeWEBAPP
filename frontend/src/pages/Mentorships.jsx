@@ -16,12 +16,13 @@ export default function Mentorships() {
           <h3 className="font-semibold text-lg">{m.mentor}</h3>
           <p className="text-gray-600">{m.field}</p>
           <span
-            className={`text-sm ${
-              m.availability === "Open" ? "text-green-600" : "text-red-600"
+            className={`text-sm font-medium px-2 py-1 rounded ${
+                m.availability === "Open" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
             }`}
           >
             {m.availability}
           </span>
+          <p className="text-gray-600 mt-1">{m.experience}</p>
         </div>
       ))}
     </div>
