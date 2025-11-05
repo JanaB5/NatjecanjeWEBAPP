@@ -1,0 +1,162 @@
+[
+  {
+    "id": 1,
+    "title": "FER Career Fair 2025",
+    "date": "2025-12-02",
+    "description": "Sajam karijera gdje poslodavci poput Rimca, Infobipa i Ericssona predstavljaju studentske prakse i poslove.",
+    "location": "FER, Dvorana B1",
+    "faculty": "FER"
+  },
+  {
+    "id": 2,
+    "title": "Radionica: Uvod u umjetnu inteligenciju",
+    "date": "2025-11-25",
+    "description": "Praktična radionica o treniranju modela i primjeni umjetne inteligencije u industriji.",
+    "location": "FER, Siva vijećnica",
+    "faculty": "FER"
+  },
+  {
+    "id": 3,
+    "title": "Astronomska noć promatranja zvijezda",
+    "date": "2025-11-15",
+    "description": "Noćno promatranje neba kroz teleskope uz vodstvo profesora PMF-a.",
+    "location": "PMF, Zvjezdarnica",
+    "faculty": "PMF"
+  },
+  {
+    "id": 4,
+    "title": "Radionica: Python za znanstvenike",
+    "date": "2025-12-05",
+    "description": "Naučite kako koristiti Python u analizi znanstvenih podataka.",
+    "location": "PMF, Računalna učionica 2",
+    "faculty": "PMF"
+  },
+  {
+    "id": 5,
+    "title": "Career Day EFZG 2025",
+    "date": "2025-11-20",
+    "description": "Upoznajte predstavnike poduzeća iz financijskog sektora i naučite kako izgraditi karijeru u ekonomiji.",
+    "location": "EFZG, Velika dvorana",
+    "faculty": "EFZG"
+  },
+  {
+    "id": 6,
+    "title": "Radionica: Kako pokrenuti startup",
+    "date": "2025-12-03",
+    "description": "Poduzetnička radionica s alumnijima EFZG-a koji su pokrenuli vlastite uspješne tvrtke.",
+    "location": "EFZG, Aula",
+    "faculty": "EFZG"
+  },
+  {
+    "id": 7,
+    "title": "Tjedan stranih jezika",
+    "date": "2025-11-27",
+    "description": "Prezentacije i mini-tečajevi raznih jezika te kulturne radionice studenata FFZG-a.",
+    "location": "FFZG, knjižnica",
+    "faculty": "FFZG"
+  },
+  {
+    "id": 8,
+    "title": "Tribina: Psihologija motivacije",
+    "date": "2025-11-10",
+    "description": "Gostujuće predavanje psihologa o motivaciji i osobnom razvoju.",
+    "location": "FFZG, Dvorana D6",
+    "faculty": "FFZG"
+  },
+  {
+    "id": 9,
+    "title": "FSB Innovation Challenge",
+    "date": "2025-12-06",
+    "description": "Natjecanje u inženjerskim inovacijama — studenti izrađuju i prezentiraju svoje projekte.",
+    "location": "FSB, Laboratorij za robotiku",
+    "faculty": "FSB"
+  },
+  {
+    "id": 10,
+    "title": "Predavanje: Održiva energija",
+    "date": "2025-11-22",
+    "description": "Stručnjaci iz industrije govore o obnovljivim izvorima energije i budućnosti inženjerstva.",
+    "location": "FSB, Dvorana 301",
+    "faculty": "FSB"
+  },
+  {
+    "id": 11,
+    "title": "Hackathon FOI 2025",
+    "date": "2025-12-10",
+    "description": "24-satno natjecanje u razvoju IT rješenja uz mentorstvo profesora i developera iz industrije.",
+    "location": "FOI Varaždin",
+    "faculty": "FOI"
+  },
+  {
+    "id": 12,
+    "title": "Workshop: UX Design for Beginners",
+    "date": "2025-11-28",
+    "description": "Interaktivna radionica o korisničkom iskustvu i dizajnu aplikacija.",
+    "location": "FOI, učionica 3.2",
+    "faculty": "FOI"
+  },
+  {
+    "id": 13,
+    "title": "Izložba studentskih radova",
+    "date": "2025-12-01",
+    "description": "Pregled najboljih dizajnerskih i likovnih radova studenata ALU.",
+    "location": "ALU Galerija",
+    "faculty": "ALU"
+  },
+  {
+    "id": 14,
+    "title": "Filmska večer FFZG-a",
+    "date": "2025-11-19",
+    "description": "Projekcija studentskih filmova i diskusija s autorima.",
+    "location": "FFZG, Kino dvorana",
+    "faculty": "FFZG"
+  },
+  {
+    "id": 15,
+    "title": "ŠPUD Art Fair",
+    "date": "2025-12-09",
+    "description": "Sajam umjetničkih radova studenata ŠPUD-a u suradnji s ALU.",
+    "location": "ŠPUD Zagreb, Atrij",
+    "faculty": "ŠPUD"
+  },
+  {
+    "id": 16,
+    "title": "Dan otvorenih vrata PMF-a",
+    "date": "2025-11-30",
+    "description": "Upoznajte laboratorije, istraživače i projekte Prirodoslovno-matematičkog fakulteta.",
+    "location": "PMF, glavni ulaz",
+    "faculty": "PMF"
+  },
+  {
+    "id": 17,
+    "title": "Seminar o klimatskim promjenama",
+    "date": "2025-12-08",
+    "description": "Predavanja stručnjaka o globalnom zatopljenju i održivosti okoliša.",
+    "location": "PMF, Dvorana 2",
+    "faculty": "PMF"
+  },
+  {
+    "id": 18,
+    "title": "FER IoT Bootcamp",
+    "date": "2025-11-29",
+    "description": "Intenzivni tečaj o Internet of Things sustavima i mikrokontrolerima.",
+    "location": "FER, Lab A202",
+    "faculty": "FER"
+  },
+  {
+    "id": 19,
+    "title": "Panel: Žene u STEM-u",
+    "date": "2025-12-04",
+    "description": "Diskusija uspješnih inženjerki o rodnoj ravnopravnosti u STEM industriji.",
+    "location": "FER, Plava dvorana",
+    "faculty": "FER"
+  },
+  {
+    "id": 20,
+    "title": "EFZG Finance Meetup",
+    "date": "2025-11-26",
+    "description": "Upoznajte analitičare iz vodećih financijskih institucija u Hrvatskoj.",
+    "location": "EFZG, dvorana 4",
+    "faculty": "EFZG"
+  }
+]

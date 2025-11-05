@@ -1,38 +1,130 @@
+/* === Base App Styling === */
 .App {
   text-align: center;
 }
 
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
+/* === Calendar Styling === */
+.react-calendar__tile--active {
+  background-color: rgba(37, 99, 235, 0.15) !important; /* transparent blue */
+  border: 2px solid rgba(0, 0, 0, 0.4) !important;
+  border-radius: 8px !important;
+  color: #1e3a8a !important;
+  font-weight: 600;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
+.react-calendar__tile--now {
+  box-shadow: inset 0 0 0 2px rgba(37, 99, 235, 0.3);
 }
 
-.App-header {
-  background-color: #282c34;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
+/* === Highlight for Event Days === */
+.react-calendar__tile.event-day {
+  background-color: rgba(37, 99, 235, 0.1) !important;
+  color: #1e3a8a !important;
+  border-radius: 8px !important;
+  font-weight: 600;
+  position: relative;
+  transition: background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.react-calendar__tile.event-day:hover {
+  background-color: rgba(37, 99, 235, 0.2) !important;
+  box-shadow: 0 0 8px rgba(37, 99, 235, 0.3);
+}
+
+/* === Event Popup (hover/info bubble) === */
+.event-popup {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(240, 248, 255, 0.98);
+  color: #1e3a8a;
+  border-radius: 10px;
+  padding: 10px 14px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+  z-index: 100;
+  text-align: center;
+  width: 200px;
+  pointer-events: auto;
+}
+
+.event-popup::before {
+  content: "";
+  position: absolute;
+  top: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-width: 6px;
+  border-style: solid;
+  border-color: transparent transparent rgba(240, 248, 255, 0.98) transparent;
+}
+
+.event-popup h4 {
+  margin: 0 0 4px 0;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.event-popup p {
+  margin: 2px 0;
+  font-size: 0.85rem;
+}
+
+.event-popup button {
+  margin-top: 6px;
+  background-color: #2563eb;
   color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 4px 8px;
+  cursor: pointer;
+  font-size: 0.8rem;
 }
 
-.App-link {
-  color: #61dafb;
+.event-popup button:hover {
+  background-color: #1d4ed8;
 }
 
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+/* === Zaduženja Section Spacing === */
+.zaduzene-item {
+  background: #fff;
+  padding: 6px 10px;          /* tighter padding */
+  margin-bottom: 4px;         /* smaller gap between items */
+  border-radius: 6px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.zaduzene-item h5 {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #1e3a8a;
+  margin: 0;
+}
+
+.zaduzene-item p {
+  font-size: 0.8rem;
+  margin: 0;
+  color: #555;
+}
+
+.zaduzene-item button {
+  font-size: 0.75rem;
+  color: #dc2626;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.zaduzene-item button:hover {
+  text-decoration: underline;
+}
+
+/* === Minor resets === */
+textarea,
+input {
+  font-family: inherit;
+  font-size: 0.9rem;
 }

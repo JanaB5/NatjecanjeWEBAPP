@@ -1,7 +1,7 @@
 import { useState } from "react";
 import axios from "axios";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, ArrowRight, CheckCircle, XCircle } from "lucide-react";
+import {CheckCircle, XCircle } from "lucide-react";
 
 export default function Connect() {
   const [faculty, setFaculty] = useState("");
@@ -9,9 +9,16 @@ export default function Connect() {
   const [category, setCategory] = useState("");
   const [results, setResults] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [savedJobs, setSavedJobs] = useState(
-    JSON.parse(localStorage.getItem("savedJobs") || "[]")
-  );
+
+  // ✅ Read currently logged-in student from localStorage
+  const student = JSON.parse(localStorage.getItem("student"));
+  const username = student?.username || null;
+
+  const [savedJobs, setSavedJobs] = useState(() => {
+    if (!username) return [];
+    return JSON.parse(localStorage.getItem(`savedJobs_${username}`) || "[]");
+  });
+
   const [loading, setLoading] = useState(false);
   const [showCards, setShowCards] = useState(false);
 
@@ -41,11 +48,26 @@ export default function Connect() {
 
   const handleSave = () => {
     const job = results[currentIndex];
+    if (!username) {
+      alert("🔒 Morate biti prijavljeni da biste spremili posao!");
+      return;
+    }
+
     const updated = [...savedJobs, job];
     setSavedJobs(updated);
-    localStorage.setItem("savedJobs", JSON.stringify(updated));
+    localStorage.setItem(`savedJobs_${username}`, JSON.stringify(updated));
     handleSkip();
   };
+
+  // ✅ Helper: Warn if user isn't signed in
+  const requireLogin = () => {
+    if (!username) {
+      alert("🔒 Morate biti prijavljeni da biste koristili ovu opciju!");
+      return false;
+    }
+    return true;
+  };
+
 
   return (
     <div
@@ -130,7 +152,7 @@ export default function Connect() {
             {loading ? "Pretražujem..." : "Poveži me"}
           </button>
 
-          {savedJobs.length > 0 && (
+          {username && savedJobs.length > 0 && (
             <div className="mt-6 bg-green-50 border border-green-200 p-3 rounded text-green-700">
               ✅ Spremljeno poslova: <b>{savedJobs.length}</b>
             </div>
@@ -190,14 +212,21 @@ export default function Connect() {
           {results[currentIndex] && (
             <div className="flex gap-16 mt-8">
               <button
-                onClick={handleSkip}
+                onClick={() => {
+                  if (!requireLogin()) return;
+                  handleSkip();
+                }}
                 className="bg-red-100 text-red-600 rounded-full p-5 hover:bg-red-200 transition-all"
                 title="Ne zanima me"
               >
                 <XCircle size={36} />
               </button>
+
               <button
-                onClick={handleSave}
+                onClick={() => {
+                  if (!requireLogin()) return;
+                  handleSave();
+                }}
                 className="bg-green-100 text-green-600 rounded-full p-5 hover:bg-green-200 transition-all"
                 title="Spremi posao"
               >

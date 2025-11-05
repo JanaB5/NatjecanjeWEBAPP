@@ -234,36 +234,14 @@ async def chat(request: Request):
 # === EVENTS ===
 @app.get("/events")
 def get_events():
-    return [
-        {
-            "id": 1,
-            "title": "Smotra Sveučilišta u Zagrebu 2025",
-            "date": "2025-11-13",
-            "location": "Zagrebački Velesajam",
-            "description": "Središnji godišnji događaj gdje studenti i maturanti mogu upoznati fakultete, studije i karijerne mogućnosti."
-        },
-        {
-            "id": 2,
-            "title": "Radionica: Kako napisati životopis i motivacijsko pismo",
-            "date": "2025-11-18",
-            "location": "FER, Dvorana B4",
-            "description": "Radionica za studente koji žele unaprijediti svoj CV i motivacijsko pismo uz praktične savjete stručnjaka iz ljudskih resursa."
-        },
-        {
-            "id": 3,
-            "title": "Career Fair 2025",
-            "date": "2025-12-02",
-            "location": "Ekonomski fakultet Zagreb",
-            "description": "Sajam karijera gdje poslodavci poput Deloittea, Infobipa i Rimac Automobila predstavljaju prakse i otvorene pozicije studentima."
-        },
-        {
-            "id": 4,
-            "title": "AI u razvoju karijere: budućnost zapošljavanja",
-            "date": "2025-12-10",
-            "location": "PMF, dvorana 003",
-            "description": "Predavanje o utjecaju umjetne inteligencije na karijerni razvoj i zapošljavanje."
-        }
-    ]
+    events_path = os.path.join(DATA_DIR, "events.json")
+    if not os.path.exists(events_path):
+        raise HTTPException(status_code=404, detail="events.json not found")
+
+    with open(events_path, encoding="utf-8") as f:
+        events = json.load(f)
+    return {"events": events}
+
 
 # === REGISTER & LOGIN (secure) ===
 @app.post("/register")
@@ -322,11 +300,13 @@ def register_event(username: str = Form(...), event_id: int = Form(...), current
         raise HTTPException(status_code=403, detail="Zabranjen pristup")
 
     students = load_students()
-    if event_id not in students[username]["events"]:
+    if username not in students:
+        raise HTTPException(status_code=404, detail="Korisnik nije pronađen")
+
+    if event_id not in students[username].get("events", []):
         students[username]["events"].append(event_id)
         save_students(students)
     return {"success": True, "events": students[username]["events"]}
-
 
 
 PROFILE_DIR = os.path.join(DATA_DIR, "profiles")
@@ -442,6 +422,47 @@ def delete_profile_image(username: str = Form(...), current=Depends(get_current_
         save_students(students)
 
     return {"success": True}
+
+@app.post("/delete_cv")
+def delete_cv(username: str = Form(...), current=Depends(get_current_user)):
+    """Briše korisnikov CV (PDF)"""
+    if current["username"] != username:
+        raise HTTPException(status_code=403, detail="Zabranjen pristup")
+
+    students = load_students()
+    if username not in students:
+        raise HTTPException(status_code=404, detail="Korisnik nije pronađen")
+
+    old_file = students[username].get("cv")
+    if old_file:
+        path = os.path.join(PROFILE_DIR, old_file)
+        if os.path.exists(path):
+            os.remove(path)
+        students[username]["cv"] = None
+        save_students(students)
+
+    return {"success": True}
+
+@app.post("/update_profile")
+def update_profile(
+    username: str = Form(...),
+    about: str = Form(""),
+    university: str = Form(""),
+    current=Depends(get_current_user)
+):
+    """Ažurira polja 'about' i 'university' u students.json"""
+    if current["username"] != username:
+        raise HTTPException(status_code=403, detail="Zabranjen pristup")
+
+    students = load_students()
+    if username not in students:
+        raise HTTPException(status_code=404, detail="Korisnik nije pronađen")
+
+    students[username]["about"] = about
+    students[username]["university"] = university
+    save_students(students)
+
+    return {"success": True, "student": students[username]}
 
 # === CONNECT DATA (Jobs, Mentors, Advice) ===
 

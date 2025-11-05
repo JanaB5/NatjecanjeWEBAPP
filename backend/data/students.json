@@ -15,5 +15,34 @@
         "date": "2025-11-07"
       }
     ]
+  },
+  "Marko": {
+    "name": "marko ropar",
+    "university": "FER",
+    "about": "Student",
+    "connections": [],
+    "events": [],
+    "hashed_password": "$2b$12$PWDx4PQPkKQA1QMBTM2FUeIMS09YkzqSMzCnG6fkpTiN33K/RSuUW",
+    "profile_image": "Marko_1762328539.264563.jpg",
+    "cv": "Marko_1762328552.751017.pdf"
+  },
+  "mark": {
+    "name": "mark mark",
+    "university": "FER",
+    "about": "Student",
+    "connections": [],
+    "events": [
+      2
+    ],
+    "hashed_password": "$2b$12$IrRZIYUDzmq3Ir6va61SzOXeB/GnW/ihVWAACC0w4HIjSjLrfczbK",
+    "meetings": [
+      {
+        "title": "Posoa",
+        "description": "posao",
+        "date": "2025-11-05"
+      }
+    ],
+    "profile_image": "mark_1762345526.024324.jpg",
+    "cv": "mark_1762346818.52058.pdf"
   }
 }

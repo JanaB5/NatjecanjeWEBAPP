@@ -1,2 +1,9 @@
-# Created by venv; see https://docs.python.org/3/library/venv.html
-.env
+# === Virtual environment ===
+venv/
+.env/
+.env.*
+
+# === Environment and secrets ===
+*.env
+*.key
+*.pem

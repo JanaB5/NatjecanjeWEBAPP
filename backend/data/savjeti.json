@@ -15,5 +15,25 @@
         "reply": "ok"
       }
     ]
+  },
+  {
+    "id": 2,
+    "question": "imam pitanje",
+    "tags": [
+      "FER"
+    ],
+    "replies": [
+      {
+        "username": "Marko",
+        "reply": "kul"
+      }
+    ]
+  },
+  {
+    "id": 3,
+    "question": "Trebam pomoc",
+    "tags": [
+      "Praksa"
+    ]
   }
 ]
