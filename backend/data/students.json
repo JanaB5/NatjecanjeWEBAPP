@@ -1,20 +1,19 @@
 {
-  "marko": {
-    "name": "marko ropar",
-    "university": "FER",
-    "about": "hello",
-    "cv": null,
-    "connections": [],
-    "events": [
-      2
-    ]
-  },
   "jana": {
-    "name": "jana bulum",
-    "university": "FER",
-    "about": "hi",
-    "cv": null,
+    "name": "jana",
+    "university": "fakultet elektrotehnike i racunarstva",
+    "about": "studentica sam trece godine",
     "connections": [],
-    "events": []
+    "events": [],
+    "hashed_password": "$2b$12$vVAxUSmej7DhyKsd52dxx.nMr959tYUOkojDbsHm3ogtM4SJj8Nuu",
+    "profile_image": "jana_1762363580.860588.jpg",
+    "cv": "jana_1762363602.722528.pdf",
+    "meetings": [
+      {
+        "title": "mentor projekt",
+        "description": "projekt",
+        "date": "2025-11-07"
+      }
+    ]
   }
 }

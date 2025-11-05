@@ -1,160 +1,210 @@
 import { useState } from "react";
-
-const mockMatches = [
-  {
-    faculty: "FER",
-    type: "Mentor",
-    name: "Ivan Radić",
-    role: "Software Engineer at Infobip",
-  },
-  {
-    faculty: "EFZG",
-    type: "Job",
-    name: "Ana Petrović",
-    role: "HR Recruiter at Deloitte",
-  },
-  {
-    faculty: "PMF",
-    type: "Advice",
-    name: "Dr. Luka Novak",
-    role: "Career Counselor, University of Zagreb",
-  },
-];
+import axios from "axios";
+import { motion, AnimatePresence } from "framer-motion";
+import { ArrowLeft, ArrowRight, CheckCircle, XCircle } from "lucide-react";
 
 export default function Connect() {
   const [faculty, setFaculty] = useState("");
   const [type, setType] = useState("");
-  const [match, setMatch] = useState(null);
-  const [messages, setMessages] = useState([]);
-  const [input, setInput] = useState("");
+  const [category, setCategory] = useState("");
+  const [results, setResults] = useState([]);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [savedJobs, setSavedJobs] = useState(
+    JSON.parse(localStorage.getItem("savedJobs") || "[]")
+  );
+  const [loading, setLoading] = useState(false);
+  const [showCards, setShowCards] = useState(false);
 
-  const findMatch = () => {
-    const found =
-      mockMatches.find((m) => m.faculty === faculty && m.type === type) || null;
-    setMatch(found);
-    setMessages([]);
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      const res = await axios.get("http://127.0.0.1:8000/connect_data", {
+        params: { faculty, type, category },
+      });
+      setResults(res.data.results || []);
+      setCurrentIndex(0);
+      setShowCards(true);
+    } catch {
+      alert("Greška pri dohvaćanju podataka!");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const sendMessage = (e) => {
-    e.preventDefault();
-    if (!input.trim()) return;
-    setMessages([...messages, { from: "you", text: input }]);
-    setInput("");
-    setTimeout(() => {
-      setMessages((prev) => [
-        ...prev,
-        {
-          from: "them",
-          text:
-            match?.type === "Mentor"
-              ? "Drago mi je da si se javio! Kako ti mogu pomoći u karijeri?"
-              : match?.type === "Job"
-              ? "Pošalji mi svoj CV, pa ćemo provjeriti otvorene pozicije!"
-              : "Rado ću ti dati savjet o studiranju i karijeri!",
-        },
-      ]);
-    }, 600);
+  const handleSkip = () => {
+    if (currentIndex < results.length - 1) {
+      setCurrentIndex((prev) => prev + 1);
+    } else {
+      setShowCards(false);
+    }
+  };
+
+  const handleSave = () => {
+    const job = results[currentIndex];
+    const updated = [...savedJobs, job];
+    setSavedJobs(updated);
+    localStorage.setItem("savedJobs", JSON.stringify(updated));
+    handleSkip();
   };
 
   return (
-    <div className="max-w-3xl mx-auto">
-      <h2 className="text-3xl font-bold text-blue-600 mb-6 text-center">
-        Career Connect Chat
-      </h2>
+    <div
+      className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 p-6 flex flex-col justify-center items-center"
+      style={{
+        backgroundImage:
+          "url('https://images.unsplash.com/photo-1504384308090-c894fdcc538d')",
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+      }}
+    >
+      {!showCards ? (
+        <motion.div
+          className="bg-white/80 backdrop-blur-md p-8 rounded-xl shadow-xl w-full max-w-4xl"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <h2 className="text-4xl font-bold text-blue-700 mb-6 text-center">
+            Career Connect Portal
+          </h2>
 
-      {/* Step 1: Selection */}
-      {!match && (
-        <div className="bg-white p-6 rounded-lg shadow-md space-y-4">
-          <div>
-            <label className="block font-semibold mb-1">Fakultet:</label>
-            <select
-              className="border rounded px-3 py-2 w-full"
-              value={faculty}
-              onChange={(e) => setFaculty(e.target.value)}
-            >
-              <option value="">-- Odaberi --</option>
-              <option value="FER">FER</option>
-              <option value="EFZG">EFZG</option>
-              <option value="PMF">PMF</option>
-              <option value="FFZG">FFZG</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="block font-semibold mb-1">
-              Što tražiš?
-            </label>
-            <select
-              className="border rounded px-3 py-2 w-full"
-              value={type}
-              onChange={(e) => setType(e.target.value)}
-            >
-              <option value="">-- Odaberi --</option>
-              <option value="Mentor">Mentora</option>
-              <option value="Job">Posao</option>
-              <option value="Advice">Savjet</option>
-            </select>
-          </div>
-
-          <button
-            onClick={findMatch}
-            disabled={!faculty || !type}
-            className="bg-blue-600 text-white px-5 py-2 rounded hover:bg-blue-700 w-full"
-          >
-            Poveži me
-          </button>
-        </div>
-      )}
-
-      {/* Step 2: Chat */}
-      {match && (
-        <div className="bg-white p-6 rounded-lg shadow-md">
-          <div className="mb-4">
-            <h3 className="text-xl font-semibold text-blue-600">
-              Povezan si s {match.name}
-            </h3>
-            <p className="text-gray-600">{match.role}</p>
-          </div>
-
-          <div className="border rounded h-80 p-3 overflow-y-auto mb-3 bg-gray-50">
-            {messages.map((m, i) => (
-              <div
-                key={i}
-                className={`my-2 ${
-                  m.from === "you" ? "text-right text-blue-600" : "text-left text-gray-800"
-                }`}
+          {/* FILTERI */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <div>
+              <label className="block font-semibold mb-1">Fakultet:</label>
+              <select
+                className="border rounded px-3 py-2 w-full"
+                value={faculty}
+                onChange={(e) => setFaculty(e.target.value)}
               >
-                <span
-                  className={`inline-block px-3 py-2 rounded-lg ${
-                    m.from === "you"
-                      ? "bg-blue-100"
-                      : "bg-gray-200"
-                  }`}
-                >
-                  {m.text}
-                </span>
-              </div>
-            ))}
+                <option value="">-- Odaberi --</option>
+                <option value="FER">FER</option>
+                <option value="PMF">PMF</option>
+                <option value="EFZG">EFZG</option>
+                <option value="FFZG">FFZG</option>
+                <option value="FAR">FAR</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block font-semibold mb-1">Tip:</label>
+              <select
+                className="border rounded px-3 py-2 w-full"
+                value={type}
+                onChange={(e) => setType(e.target.value)}
+              >
+                <option value="">-- Odaberi --</option>
+                <option value="Job">Posao</option>
+                <option value="Mentor">Mentor</option>
+                <option value="Advice">Savjet</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block font-semibold mb-1">Područje:</label>
+              <select
+                className="border rounded px-3 py-2 w-full"
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+              >
+                <option value="">-- Odaberi --</option>
+                <option value="IT">IT</option>
+                <option value="AI">AI</option>
+                <option value="Finance">Finance</option>
+                <option value="Research">Research</option>
+                <option value="Marketing">Marketing</option>
+                <option value="Education">Education</option>
+                <option value="Entrepreneurship">Entrepreneurship</option>
+                <option value="Psychology">Psychology</option>
+                <option value="Translation">Translation</option>
+                <option value="Pharmacy">Pharmacy</option>
+                <option value="Engineering">Engineering</option>
+              </select>
+            </div>
           </div>
 
-          <form onSubmit={sendMessage} className="flex gap-2">
-            <input
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder="Napiši poruku..."
-              className="flex-1 border rounded px-3 py-2"
-            />
-            <button className="bg-blue-600 text-white px-4 rounded">
-              Pošalji
-            </button>
-          </form>
-
           <button
-            onClick={() => setMatch(null)}
-            className="text-sm text-gray-500 mt-3 underline"
+            onClick={fetchData}
+            disabled={loading}
+            className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition-all w-full md:w-auto"
           >
-            ↩️ Vrati se na odabir
+            {loading ? "Pretražujem..." : "Poveži me"}
           </button>
+
+          {savedJobs.length > 0 && (
+            <div className="mt-6 bg-green-50 border border-green-200 p-3 rounded text-green-700">
+              ✅ Spremljeno poslova: <b>{savedJobs.length}</b>
+            </div>
+          )}
+        </motion.div>
+      ) : (
+        <div className="relative w-full max-w-3xl flex flex-col items-center justify-center">
+          <AnimatePresence>
+            {results[currentIndex] ? (
+              <motion.div
+                key={currentIndex}
+                className="bg-white/90 backdrop-blur-md p-8 rounded-2xl shadow-2xl w-full text-center"
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.8 }}
+                transition={{ duration: 0.3 }}
+              >
+                <h3 className="text-3xl font-bold text-blue-700 mb-2">
+                  {results[currentIndex].name}
+                </h3>
+                <p className="text-lg font-semibold text-gray-800 mb-1">
+                  {results[currentIndex].role}
+                </p>
+                <p className="text-gray-600 mb-4">
+                  {results[currentIndex].details}
+                </p>
+                {results[currentIndex].pay !== "-" && (
+                  <p className="text-green-600 font-semibold text-lg mb-2">
+                    💶 {results[currentIndex].pay}
+                  </p>
+                )}
+                <p className="text-gray-500">
+                  🎓 {results[currentIndex].faculty} —{" "}
+                  {results[currentIndex].category}
+                </p>
+              </motion.div>
+            ) : (
+              <motion.div
+                className="bg-white/90 p-8 rounded-2xl shadow-xl text-center"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+              >
+                <h3 className="text-2xl font-semibold text-gray-700">
+                  Nema više ponuda!
+                </h3>
+                <button
+                  onClick={() => setShowCards(false)}
+                  className="mt-4 bg-blue-600 text-white px-5 py-2 rounded hover:bg-blue-700"
+                >
+                  ↩️ Povratak na filtere
+                </button>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* STRELICE */}
+          {results[currentIndex] && (
+            <div className="flex gap-16 mt-8">
+              <button
+                onClick={handleSkip}
+                className="bg-red-100 text-red-600 rounded-full p-5 hover:bg-red-200 transition-all"
+                title="Ne zanima me"
+              >
+                <XCircle size={36} />
+              </button>
+              <button
+                onClick={handleSave}
+                className="bg-green-100 text-green-600 rounded-full p-5 hover:bg-green-200 transition-all"
+                title="Spremi posao"
+              >
+                <CheckCircle size={36} />
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>
