@@ -18,6 +18,8 @@ export default function Dashboard() {
   const [savedJobs, setSavedJobs] = useState([]);
   const [selectedJob, setSelectedJob] = useState(null);
   const [file, setFile] = useState(null);
+  const [useSavedCV, setUseSavedCV] = useState(true);
+  const [coverLetter, setCoverLetter] = useState(null);
   const location = useLocation();
 
   // ✅ Helper for per-user localStorage key
@@ -214,22 +216,50 @@ export default function Dashboard() {
   // === Moji poslovi ===
   const handleApply = (job) => {
     setSelectedJob(job);
+    setUseSavedCV(!!student?.cv); // use saved CV if the student has one
+    setFile(null);                // reset new CV input
+    setCoverLetter(null);         // reset cover letter input
   };
 
   const handleUploadApplication = async (e) => {
     e.preventDefault();
-    if (!file) return alert("Odaberi CV datoteku!");
-    const form = new FormData();
-    form.append("username", student.username);
-    form.append("file", file);
+    if (!student?.username) return alert("Prvo se prijavite.");
+    if (!coverLetter) return alert("Učitaj motivacijsko pismo (obavezno).");
+
     try {
-      await api.post("/upload_profile", form, {
-        headers: { "Content-Type": "multipart/form-data" },
+      const token = localStorage.getItem("token");
+      const form = new FormData();
+      form.append("username", student.username);
+      form.append("job_name", selectedJob.name);
+      form.append("use_saved_cv", useSavedCV ? "true" : "false");
+      form.append("cover_letter", coverLetter);
+
+      if (!useSavedCV) {
+        if (!file) return alert("Učitaj CV ili označi korištenje spremljenog CV-a.");
+        form.append("cv_file", file);
+      }
+
+      const res = await axios.post("http://127.0.0.1:8000/apply", form, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "multipart/form-data",
+        },
       });
-      alert("✅ Prijava uspješno poslana!");
+
+      if (!res.data?.success) throw new Error("Neuspjela prijava.");
+
+      // ✅ Mark job as 'Poslano'
+      const KEY = getSavedJobsKey(student.username);
+      const updated = savedJobs.map((j) =>
+        j.name === selectedJob.name ? { ...j, status: "Poslano" } : j
+      );
+      setSavedJobs(updated);
+      localStorage.setItem(KEY, JSON.stringify(updated));
+
+      alert("✅ Prijava poslana!");
       setSelectedJob(null);
-      setFile(null);
     } catch (err) {
+      console.error(err);
       alert("❌ Greška pri slanju prijave!");
     }
   };
@@ -412,13 +442,19 @@ export default function Dashboard() {
                     <p className="text-gray-700 font-medium">{job.role}</p>
                     <p className="text-gray-600 text-sm mb-2">{job.details}</p>
                     <p className="text-green-600 font-semibold mb-2">{job.pay}</p>
-                    <div className="flex justify-between">
-                      <button
-                        onClick={() => handleApply(job)}
-                        className="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700"
-                      >
-                        Prijavi se
-                      </button>
+                    <div className="flex justify-between items-center">
+                      {job.status ? (
+                        <span className="px-2 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
+                          Status: {job.status}
+                        </span>
+                      ) : (
+                        <button
+                          onClick={() => handleApply(job)}
+                          className="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700"
+                        >
+                          Prijavi se
+                        </button>
+                      )}
                       <button
                         onClick={() => handleRemoveJob(job.name)}
                         className="text-sm text-red-500 underline"
@@ -458,16 +494,75 @@ export default function Dashboard() {
                     {selectedJob.role} — {selectedJob.details}
                   </p>
 
-                  <form onSubmit={handleUploadApplication} className="space-y-3">
-                    <label className="block text-sm font-semibold text-gray-600">
-                      Učitaj svoj CV:
-                    </label>
-                    <input
-                      type="file"
-                      accept=".pdf,.doc,.docx"
-                      onChange={(e) => setFile(e.target.files[0])}
-                      className="border p-2 w-full rounded"
-                    />
+                  <form onSubmit={handleUploadApplication} className="space-y-4">
+                    {/* CV selection */}
+                    <div className="space-y-2">
+                      <label className="block text-sm font-semibold text-gray-700">CV:</label>
+
+                      {student?.cv ? (
+                        <div className="rounded border p-3 bg-gray-50">
+                          <label className="inline-flex items-center gap-2 text-sm">
+                            <input
+                              type="checkbox"
+                              checked={useSavedCV}
+                              onChange={(e) => setUseSavedCV(e.target.checked)}
+                            />
+                            <span>Koristi moj spremljeni CV</span>
+                            <a
+                              href={`http://127.0.0.1:8000/profile_file/${student.cv}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-blue-600 underline ml-2"
+                            >
+                              Pregledaj
+                            </a>
+                          </label>
+
+                          {!useSavedCV && (
+                            <div className="mt-2">
+                              <input
+                                type="file"
+                                accept=".pdf,.doc,.docx"
+                                onChange={(e) => setFile(e.target.files[0])}
+                                className="border p-2 w-full rounded"
+                              />
+                              <p className="text-xs text-gray-500 mt-1">
+                                Ovaj CV se koristi samo za ovu prijavu (ne mijenja tvoj profilni CV).
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <div>
+                          <input
+                            type="file"
+                            accept=".pdf,.doc,.docx"
+                            onChange={(e) => setFile(e.target.files[0])}
+                            className="border p-2 w-full rounded"
+                            required
+                          />
+                          <p className="text-xs text-gray-500 mt-1">
+                            Nemaš spremljeni CV na profilu — učitaj CV za ovu prijavu.
+                          </p>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Cover letter */}
+                    <div className="space-y-2">
+                      <label className="block text-sm font-semibold text-gray-700">
+                        Motivacijsko pismo (obavezno):
+                      </label>
+                      <input
+                        type="file"
+                        accept=".pdf,.doc,.docx"
+                        onChange={(e) => setCoverLetter(e.target.files[0])}
+                        className="border p-2 w-full rounded"
+                        required
+                      />
+                    </div>
+
+                    {/* Buttons */}
                     <button
                       type="submit"
                       className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 w-full"

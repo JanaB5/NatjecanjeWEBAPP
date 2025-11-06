@@ -96,6 +96,71 @@ def update_application_status(
 
     return {"success": True, "updated": found}
 
+@app.post("/apply")
+async def apply_for_job(
+    username: str = Form(...),
+    job_name: str = Form(...),
+    use_saved_cv: bool = Form(False),
+    cover_letter: UploadFile = File(...),
+    cv_file: Optional[UploadFile] = File(None),
+):
+    """
+    Kreira novu prijavu za posao:
+    - Ako je use_saved_cv True → koristi spremljeni CV korisnika.
+    - Inače koristi novi CV (cv_file).
+    - Motivacijsko pismo (cover_letter) je uvijek obavezno.
+    """
+    students = load_students()
+    if username not in students:
+        raise HTTPException(status_code=404, detail="Korisnik nije pronađen")
+
+    user = students[username]
+
+    # === Odredi koji CV se koristi ===
+    if use_saved_cv:
+        if not user.get("cv"):
+            raise HTTPException(status_code=400, detail="Nema spremljenog CV-a.")
+        cv_filename = user["cv"]
+    else:
+        if not cv_file:
+            raise HTTPException(status_code=400, detail="CV je obavezan.")
+        ext = cv_file.filename.split(".")[-1].lower()
+        if ext not in ["pdf", "doc", "docx"]:
+            raise HTTPException(status_code=400, detail="CV mora biti PDF/DOC/DOCX.")
+        cv_filename = f"{username}_{datetime.utcnow().timestamp()}_cv.{ext}"
+        with open(os.path.join("data", "profiles", cv_filename), "wb") as f:
+            f.write(await cv_file.read())
+
+    # === Motivacijsko pismo (obavezno) ===
+    cl_ext = cover_letter.filename.split(".")[-1].lower()
+    if cl_ext not in ["pdf", "doc", "docx"]:
+        raise HTTPException(status_code=400, detail="Motivacijsko pismo mora biti PDF/DOC/DOCX.")
+    cl_filename = f"{username}_{datetime.utcnow().timestamp()}_cover.{cl_ext}"
+    with open(os.path.join("data", "profiles", cl_filename), "wb") as f:
+        f.write(await cover_letter.read())
+
+    # === Spremi prijavu u applications.json ===
+    applications = load_applications()
+    app_id = (applications[-1]["id"] + 1) if applications else 1
+    new_app = {
+        "id": app_id,
+        "username": username,
+        "job_name": job_name,
+        "cv": cv_filename,
+        "cover_letter": cl_filename,
+        "status": "Poslano",
+        "created_at": datetime.utcnow().isoformat(),
+        "updated_at": datetime.utcnow().isoformat(),
+    }
+    applications.append(new_app)
+    save_applications(applications)
+
+    return {"success": True, "application": new_app}
+
+@app.get("/applications/{username}")
+def get_applications(username: str):
+    applications = load_applications()
+    return {"applications": [a for a in applications if a["username"] == username]}
 
 @app.get("/get_notifications")
 def get_notifications(current=Depends(get_current_user)):
@@ -188,16 +253,6 @@ def get_current_user(credentials: Optional[HTTPAuthorizationCredentials] = Depen
     if not user:
         raise HTTPException(status_code=401, detail="Korisnik ne postoji")
     return {"username": username, **{k: v for k, v in user.items() if k != "hashed_password"}}
-
-# === FastAPI app setup ===
-app = FastAPI()
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
 
 # === Routes ===
 
@@ -594,11 +649,61 @@ def unregister_event(username: str = Form(...), event_id: int = Form(...), curre
 @app.get("/careers")
 def get_careers():
     return {
-        "FER": ["Software Engineer", "Data Scientist", "AI Developer", "System Architect", "DevOps Engineer"],
-        "PMF": ["Matematičar", "Analitičar podataka", "Nastavnik matematike/fizike", "Istraživač", "Znanstveni suradnik"],
-        "EFZG": ["Financijski analitičar", "Marketing stručnjak", "Računovođa", "Bankarski savjetnik", "Konzultant za poslovni razvoj"],
-        "FFZG": ["Psiholog", "Sociolog", "Profesor jezika", "Prevoditelj", "Konzultant za ljudske resurse"],
-        "FAR": ["Farmaceut", "Klinički istraživač", "Regulatorni stručnjak", "Prodajni predstavnik za farmaciju", "Laboratorijski analitičar"]
+        "FER": {
+            "about": "Fakultet elektrotehnike i računarstva (FER) vodeća je institucija u području tehnologije, informatike i računarstva u Hrvatskoj. Studenti stječu znanja iz umjetne inteligencije, strojnog učenja, automatike i razvoja softvera.",
+            "careers": [
+                "Software Engineer",
+                "Data Scientist",
+                "AI Developer",
+                "System Architect",
+                "DevOps Engineer"
+            ],
+            "mentor_quote": "“FER studenti su među najtraženijima na tržištu — njihova kombinacija tehničkog znanja i inovativnog razmišljanja čini ih izvrsnim kandidatima.” — dr. Marko Novak, Mentor"
+        },
+        "PMF": {
+            "about": "Prirodoslovno-matematički fakultet (PMF) poznat je po vrhunskim programima iz matematike, fizike, biologije i kemije. Nudi čvrste temelje za karijeru u znanstvenom i obrazovnom sektoru.",
+            "careers": [
+                "Matematičar",
+                "Analitičar podataka",
+                "Nastavnik matematike/fizike",
+                "Istraživač",
+                "Znanstveni suradnik"
+            ],
+            "mentor_quote": "“PMF potiče analitičko razmišljanje i znanstvenu znatiželju — kvalitete koje poslodavci izuzetno cijene.” — prof. Ana Marić"
+        },
+        "EFZG": {
+            "about": "Ekonomski fakultet Sveučilišta u Zagrebu (EFZG) obrazuje buduće stručnjake iz ekonomije, marketinga, financija i poduzetništva. EFZG diplomanti često preuzimaju vodeće uloge u tvrtkama i institucijama.",
+            "careers": [
+                "Financijski analitičar",
+                "Marketing stručnjak",
+                "Računovođa",
+                "Bankarski savjetnik",
+                "Konzultant za poslovni razvoj"
+            ],
+            "mentor_quote": "“EFZG studenti donose svježe ideje i razumijevanje tržišta — ključne vještine u modernom poslovanju.” — dr. Petra Vuković"
+        },
+        "FFZG": {
+            "about": "Filozofski fakultet Sveučilišta u Zagrebu (FFZG) pruža obrazovanje u humanističkim i društvenim znanostima, potičući kritičko mišljenje i komunikacijske vještine.",
+            "careers": [
+                "Psiholog",
+                "Sociolog",
+                "Profesor jezika",
+                "Prevoditelj",
+                "Konzultant za ljudske resurse"
+            ],
+            "mentor_quote": "“Studenti FFZG-a su empatični, kreativni i izvrsni komunikatori — kvalitete koje svaka organizacija treba.” — dr. Iva Horvat"
+        },
+        "FAR": {
+            "about": "Farmaceutsko-biokemijski fakultet (FAR) usmjeren je na znanstveno-istraživački i klinički rad u farmaciji, medicini i biokemiji. Nudi modernu opremu i praktičnu nastavu.",
+            "careers": [
+                "Farmaceut",
+                "Klinički istraživač",
+                "Regulatorni stručnjak",
+                "Prodajni predstavnik za farmaciju",
+                "Laboratorijski analitičar"
+            ],
+            "mentor_quote": "“Na FAR-u učimo kako teoriju pretvoriti u praksu koja spašava živote.” — prof. Luka Barišić"
+        }
     }
 
 # === SAVJETI (advice forum) ===

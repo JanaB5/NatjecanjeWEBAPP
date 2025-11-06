@@ -5,7 +5,6 @@ import {CheckCircle, XCircle } from "lucide-react";
 
 export default function Connect() {
   const [faculty, setFaculty] = useState("");
-  const [type, setType] = useState("");
   const [category, setCategory] = useState("");
   const [results, setResults] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -26,7 +25,7 @@ export default function Connect() {
     setLoading(true);
     try {
       const res = await axios.get("http://127.0.0.1:8000/connect_data", {
-        params: { faculty, type, category },
+        params: { faculty, type: "job", category },
       });
       setResults(res.data.results || []);
       setCurrentIndex(0);
@@ -90,7 +89,7 @@ export default function Connect() {
           </h2>
 
           {/* FILTERI */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
             <div>
               <label className="block font-semibold mb-1">Fakultet:</label>
               <select
@@ -104,20 +103,6 @@ export default function Connect() {
                 <option value="EFZG">EFZG</option>
                 <option value="FFZG">FFZG</option>
                 <option value="FAR">FAR</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block font-semibold mb-1">Tip:</label>
-              <select
-                className="border rounded px-3 py-2 w-full"
-                value={type}
-                onChange={(e) => setType(e.target.value)}
-              >
-                <option value="">-- Odaberi --</option>
-                <option value="Job">Posao</option>
-                <option value="Mentor">Mentor</option>
-                <option value="Advice">Savjet</option>
               </select>
             </div>
 
