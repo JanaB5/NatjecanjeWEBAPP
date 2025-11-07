@@ -4,7 +4,9 @@
     "university": "fakultet elektrotehnike i racunarstva",
     "about": "studentica sam trece godine",
     "connections": [],
-    "events": [],
+    "events": [
+      2
+    ],
     "hashed_password": "$2b$12$vVAxUSmej7DhyKsd52dxx.nMr959tYUOkojDbsHm3ogtM4SJj8Nuu",
     "profile_image": "jana_1762363580.860588.jpg",
     "cv": "jana_1762363602.722528.pdf",

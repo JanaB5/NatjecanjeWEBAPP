@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
 import axios from "axios";
+import { Mail } from "lucide-react";
 import { api, getEvents } from "../services/api";
 import { useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
@@ -21,6 +22,10 @@ export default function Dashboard() {
   const [useSavedCV, setUseSavedCV] = useState(true);
   const [coverLetter, setCoverLetter] = useState(null);
   const location = useLocation();
+  // === Notifications ===
+  const [notifications, setNotifications] = useState([]);
+  const [unread, setUnread] = useState(false);
+  const [showNotif, setShowNotif] = useState(false);
 
   // ✅ Helper for per-user localStorage key
   const getSavedJobsKey = (u) => (u ? `savedJobs_${u}` : "savedJobs_guest");
@@ -154,6 +159,37 @@ export default function Dashboard() {
     })();
     // re-run when the student changes or jobs list changes
   }, [student?.username, savedJobs.length]);
+
+  // === Load notifications ===
+  useEffect(() => {
+    if (!student) return;
+    const token = localStorage.getItem("token");
+
+    axios.get("http://127.0.0.1:8000/get_notifications", {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    .then(res => {
+      const notifs = res.data.notifications || [];
+      setNotifications(notifs);
+      setUnread(notifs.some(n => !n.read));
+    })
+    .catch(err => console.error("Failed to fetch notifications:", err));
+  }, [student]);
+
+  const handleMarkRead = async () => {
+    if (!unread) return;
+    const token = localStorage.getItem("token");
+    try {
+      await axios.post("http://127.0.0.1:8000/mark_notifications_read", {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setUnread(false);
+      // update local read flags
+      setNotifications(notifications.map(n => ({ ...n, read: true })));
+    } catch (err) {
+      console.error("Failed to mark notifications:", err);
+    }
+  };
 
   // === Logout ===
   const handleLogout = () => {
@@ -361,9 +397,52 @@ const handleWithdraw = async (job) => {
       {student ? (
         <>
           {/* === HEADER === */}
-          <h2 className="text-4xl font-extrabold text-blue-700 mb-10 tracking-tight">
-            Dobrodošao, {student?.name?.split(" ")[0] || "student"}!
-          </h2>
+          <div className="flex justify-between items-center mb-10">
+            <h2 className="text-4xl font-extrabold text-blue-700 tracking-tight">
+              Dobrodošao, {student?.name?.split(" ")[0] || "student"}!
+            </h2>
+
+            {/* === Notifications Icon === */}
+            <div className="relative">
+              <button
+                onClick={() => {
+                  setShowNotif(!showNotif);
+                  if (!showNotif) handleMarkRead();
+                }}
+                className="relative p-2 rounded-full hover:bg-blue-100 transition"
+              >
+                <Mail size={26} className="text-blue-700" />
+                {unread && (
+                  <span className="absolute top-1 right-1 block w-3 h-3 bg-blue-500 rounded-full border-2 border-white"></span>
+                )}
+              </button>
+
+              {showNotif && (
+                <div className="absolute right-0 mt-3 w-80 bg-white shadow-lg rounded-xl border border-gray-200 z-50">
+                  <div className="p-3 border-b text-gray-800 font-semibold">📩 Obavijesti</div>
+                  <div className="max-h-64 overflow-y-auto">
+                    {notifications.length === 0 ? (
+                      <p className="p-3 text-sm text-gray-500 text-center">Nema obavijesti.</p>
+                    ) : (
+                      notifications.map((n, i) => (
+                        <div
+                          key={i}
+                          className={`p-3 border-b last:border-0 ${
+                            n.read ? "bg-white" : "bg-blue-50"
+                          }`}
+                        >
+                          <p className="text-sm text-gray-800">{n.message}</p>
+                          <p className="text-xs text-gray-500 mt-1">
+                            {new Date(n.created_at).toLocaleString("hr-HR")}
+                          </p>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
 
           {/* === PROFILE SECTION === */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
