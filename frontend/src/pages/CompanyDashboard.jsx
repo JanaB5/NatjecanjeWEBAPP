@@ -17,7 +17,7 @@ export default function CompanyDashboard() {
   const eventsRef = useRef(null);
   const applicationsRef = useRef(null);
 
-  const [form, setForm] = useState({ id: null, title: "", description: "", location: "" });
+  const [form, setForm] = useState({ id: null, title: "", description: "", location: "", pay: "" });
   const [profileForm, setProfileForm] = useState({
     about: "",
     website: "",
@@ -25,8 +25,21 @@ export default function CompanyDashboard() {
     industry: "",
   });
 
+  // === Applications handling ===
+  const [applicants, setApplicants] = useState([]);
+  const [showApplicants, setShowApplicants] = useState(false);
+  const [selectedJob, setSelectedJob] = useState(null);
+
   // === Fetch osnovni podaci ===
   useEffect(() => {
+    const companyToken =
+      localStorage.getItem("company_token") || localStorage.getItem("token"); // ✅ fallback
+    if (!companyToken) {
+      console.warn("⚠️ No token found — redirecting to login");
+      // window.location.href = "/login-company"; // ❌ comment this out for now
+    }
+    api.defaults.headers.common.Authorization = `Bearer ${companyToken}`;
+
     const user = JSON.parse(localStorage.getItem("company"));
     setCompany(user || {});
     fetchJobs();
@@ -62,6 +75,24 @@ export default function CompanyDashboard() {
     }
   };
 
+  const fetchApplicants = async (job) => {
+    try {
+      // get all apps for THIS company
+      const res = await api.get("/company/applications");
+      // filter to this specific job (by title)
+      const list = (res.data.applications || []).filter(
+        (a) => a.job_name === job.title
+      );
+
+      setApplicants(list);
+      setSelectedJob(job);
+      setShowApplicants(true);
+    } catch (err) {
+      console.error("Greška pri dohvaćanju prijava:", err);
+      alert("❌ Greška pri dohvaćanju prijava.");
+    }
+  };
+
   // === Scroll helper ===
   const scrollToSection = (ref) => {
     ref.current?.scrollIntoView({ behavior: "smooth" });
@@ -75,12 +106,13 @@ export default function CompanyDashboard() {
     formData.append("title", form.title);
     formData.append("description", form.description);
     formData.append("location", form.location);
+    formData.append("pay", form.pay); // 💰
 
     if (editMode) await api.post("/company/edit_job", formData);
     else await api.post("/company/add_job", formData);
 
     setShowForm(false);
-    setForm({ id: null, title: "", description: "", location: "" });
+    setForm({ id: null, title: "", description: "", location: "", pay: "" });
     fetchJobs();
     fetchStats();
   };
@@ -232,17 +264,28 @@ export default function CompanyDashboard() {
                     <h3 className="font-semibold text-lg text-gray-800">{job.title}</h3>
                     <p className="text-sm text-gray-500">{job.location}</p>
                     <p className="text-gray-600 mt-1 text-sm">{job.description}</p>
+                    <p className="text-green-600 font-semibold mt-1">{job.pay || "N/A"}</p>
                   </div>
-                  <button
-                    onClick={() => {
-                      setEditMode(true);
-                      setForm(job);
-                      setShowForm(true);
-                    }}
-                    className="text-blue-600 hover:underline font-medium"
-                  >
-                    Uredi
-                  </button>
+
+                  <div className="flex gap-4 items-center">
+                    <button
+                      onClick={() => fetchApplicants(job)}
+                      className="text-purple-600 font-medium hover:underline"
+                    >
+                      👀 Prijave
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setEditMode(true);
+                        setForm(job);
+                        setShowForm(true);
+                      }}
+                      className="text-blue-600 hover:underline font-medium"
+                    >
+                      Uredi
+                    </button>
+                  </div>
                 </li>
               ))}
             </ul>
@@ -380,6 +423,13 @@ export default function CompanyDashboard() {
                 />
                 <input
                   type="text"
+                  placeholder="Plaća (npr. 15€/h)"
+                  value={form.pay}
+                  onChange={(e) => setForm({ ...form, pay: e.target.value })}
+                  className="w-full border rounded px-3 py-2 mb-4"
+                />
+                <input
+                  type="text"
                   placeholder="Lokacija"
                   value={form.location}
                   onChange={(e) => setForm({ ...form, location: e.target.value })}
@@ -402,6 +452,72 @@ export default function CompanyDashboard() {
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        )}
+        {/* === APPLICANTS MODAL === */}
+        {showApplicants && (
+          <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+            <div className="bg-white p-6 rounded-lg shadow-xl w-[600px] max-h-[80vh] overflow-y-auto">
+              <h3 className="text-xl font-bold mb-4">
+                Prijavljeni studenti — {selectedJob?.title}
+              </h3>
+
+              {applicants.length ? (
+                <ul className="space-y-3">
+                  {applicants.map((app) => (
+                    <li
+                      key={app.id}
+                      className="p-3 border rounded-lg flex justify-between items-center"
+                    >
+                      <div>
+                        <p className="font-medium text-gray-800">{app.username}</p>
+                        <p className="text-sm text-gray-600">
+                          Status: <span className="font-semibold">{app.status}</span>
+                        </p>
+                      </div>
+
+                      <select
+                        onChange={async (e) => {
+                          const newStatus = e.target.value;
+                          const form = new FormData();
+                          form.append("username", app.username);
+                          form.append("job_name", app.job_name); // title
+                          form.append("new_status", newStatus);
+                          try {
+                            await api.post("/update_application_status", form);
+                            // refresh list after change
+                            fetchApplicants(selectedJob);
+                          } catch (err) {
+                            console.error(err);
+                            alert("❌ Greška pri ažuriranju statusa.");
+                          }
+                        }}
+                        defaultValue={app.status}
+                        className="border rounded px-2 py-1 text-sm"
+                      >
+                        <option value="Poslano">Poslano</option>
+                        <option value="Round 1">Round 1</option>
+                        <option value="Round 2">Round 2</option>
+                        <option value="Accepted">Accepted</option>
+                        <option value="Rejected">Rejected</option>
+                        <option value="Hired">Hired</option>
+                      </select>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-gray-500">Nema prijava za ovaj oglas.</p>
+              )}
+
+              <div className="text-right mt-4">
+                <button
+                  onClick={() => setShowApplicants(false)}
+                  className="bg-gray-300 text-gray-700 px-4 py-2 rounded hover:bg-gray-400"
+                >
+                  Zatvori
+                </button>
+              </div>
             </div>
           </div>
         )}

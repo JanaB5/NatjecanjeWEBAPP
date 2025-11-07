@@ -36,5 +36,38 @@
     "about": "e",
     "jobs_posted": [],
     "hashed_password": "$2b$12$S8UbnlQ9JaCBIPDsnoOPJO3OVj6wCmX4KwWlYdgXkYNqJUqn/Jw1y"
+  },
+  "marko": {
+    "company_name": "Marko",
+    "industry": "Marko",
+    "about": "Marko",
+    "jobs_posted": [
+      {
+        "id": 1,
+        "title": "Trebam assistant ",
+        "description": "assistant ",
+        "location": "Zagreb",
+        "posted_at": "2025-11-07T12:58:04.426730",
+        "updated_at": "2025-11-07T13:52:11.253236",
+        "pay": "5"
+      },
+      {
+        "id": 2,
+        "title": "asistent",
+        "description": "asistent",
+        "location": "Zagreb",
+        "pay": "8",
+        "posted_at": "2025-11-07T13:42:20.482910"
+      },
+      {
+        "id": 3,
+        "title": "Job",
+        "description": "JOB",
+        "location": "Zagreb",
+        "pay": "15",
+        "posted_at": "2025-11-07T15:17:42.386504"
+      }
+    ],
+    "hashed_password": "$2b$12$v65HVLyJ1ZaG062ZG6gfYOZD3cDuR90t1cAJ8eafDW.D1zfJuNwKK"
   }
 }

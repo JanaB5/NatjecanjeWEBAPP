@@ -8,32 +8,25 @@
     "replies": [
       {
         "username": "jana",
-        "reply": "prijavi se"
+        "reply": "mozes naci na job fair-u"
       },
       {
         "username": "marko",
-        "reply": "ok"
+        "reply": "ok hvala"
       }
     ]
   },
   {
     "id": 2,
-    "question": "imam pitanje",
+    "question": "kako da nadem posao",
     "tags": [
       "FER"
     ],
     "replies": [
       {
-        "username": "Marko",
-        "reply": "kul"
+        "username": "jana",
+        "reply": "ispod povezi me imas hrpu"
       }
-    ]
-  },
-  {
-    "id": 3,
-    "question": "Trebam pomoc",
-    "tags": [
-      "Praksa"
     ]
   }
 ]

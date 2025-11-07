@@ -123,6 +123,38 @@ export default function Dashboard() {
     localStorage.setItem(key, JSON.stringify(meetings));
   }, [meetings, student?.username]);
 
+  // === Pull application statuses from backend and merge into savedJobs ===
+  useEffect(() => {
+    if (!student?.username) return;
+
+    (async () => {
+      try {
+        // no auth needed for this endpoint in your backend
+        const res = await api.get(`/applications/${student.username}`);
+        const apps = Array.isArray(res.data.applications) ? res.data.applications : [];
+
+        if (!apps.length) return;
+
+        const KEY = getSavedJobsKey(student.username);
+
+        // merge statuses by (role=job_name) and (name=company_name)
+        const merged = (savedJobs || []).map(j => {
+          const hit = apps.find(a =>
+            a.job_name?.toLowerCase() === (j.role || "").toLowerCase() &&
+            (a.company_name || "").toLowerCase() === (j.name || "").toLowerCase()
+          );
+          return hit ? { ...j, status: hit.status } : j;
+        });
+
+        setSavedJobs(merged);
+        localStorage.setItem(KEY, JSON.stringify(merged));
+      } catch (err) {
+        console.error("Failed to pull application statuses:", err);
+      }
+    })();
+    // re-run when the student changes or jobs list changes
+  }, [student?.username, savedJobs.length]);
+
   // === Logout ===
   const handleLogout = () => {
     localStorage.removeItem("student");
@@ -221,48 +253,95 @@ export default function Dashboard() {
     setCoverLetter(null);         // reset cover letter input
   };
 
-  const handleUploadApplication = async (e) => {
-    e.preventDefault();
-    if (!student?.username) return alert("Prvo se prijavite.");
-    if (!coverLetter) return alert("Učitaj motivacijsko pismo (obavezno).");
-
-    try {
-      const token = localStorage.getItem("token");
-      const form = new FormData();
-      form.append("username", student.username);
-      form.append("job_name", selectedJob.name);
-      form.append("use_saved_cv", useSavedCV ? "true" : "false");
-      form.append("cover_letter", coverLetter);
-
-      if (!useSavedCV) {
-        if (!file) return alert("Učitaj CV ili označi korištenje spremljenog CV-a.");
-        form.append("cv_file", file);
-      }
-
-      const res = await axios.post("http://127.0.0.1:8000/apply", form, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "multipart/form-data",
-        },
-      });
-
-      if (!res.data?.success) throw new Error("Neuspjela prijava.");
-
-      // ✅ Mark job as 'Poslano'
-      const KEY = getSavedJobsKey(student.username);
-      const updated = savedJobs.map((j) =>
-        j.name === selectedJob.name ? { ...j, status: "Poslano" } : j
-      );
-      setSavedJobs(updated);
-      localStorage.setItem(KEY, JSON.stringify(updated));
-
-      alert("✅ Prijava poslana!");
-      setSelectedJob(null);
-    } catch (err) {
-      console.error(err);
-      alert("❌ Greška pri slanju prijave!");
-    }
+  // stable key for job (works for real and demo jobs)
+  const jobKey = (j) => (j.job_id != null ? `id:${j.job_id}` : `demo:${j.name}|${j.role}`);
+  const unhideInConnect = (job) => {
+    if (!student?.username) return;
+    const HKEY = `hiddenJobs_${student.username}`;
+    const arr = JSON.parse(localStorage.getItem(HKEY) || "[]");
+    const k = jobKey(job);
+    const next = arr.filter((x) => x !== k);
+    localStorage.setItem(HKEY, JSON.stringify(next));
+    // notify Connect (and any listeners) to refresh
+    window.dispatchEvent(new Event("storage"));
   };
+
+
+ const handleUploadApplication = async (e) => {
+  e.preventDefault();
+  if (!student?.username) return alert("Prvo se prijavite.");
+  if (!coverLetter) return alert("Učitaj motivacijsko pismo (obavezno).");
+
+  try {
+    const token = localStorage.getItem("token");
+
+    // 🟩 REPLACED this whole block with the improved FormData below:
+    const form = new FormData();
+    form.append("username", student.username);
+    form.append("job_name", selectedJob.role);
+    form.append("company_name", selectedJob.name);
+    if (selectedJob.job_id != null) form.append("job_id", String(selectedJob.job_id)); // 👈 optional
+    form.append("use_saved_cv", useSavedCV ? "true" : "false");
+    form.append("cover_letter", coverLetter);
+    if (!useSavedCV && file) form.append("cv_file", file);
+    // 🟩 end of new block
+
+    const res = await axios.post("http://127.0.0.1:8000/apply", form, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "multipart/form-data",
+      },
+    });
+
+    if (!res.data?.success) throw new Error("Neuspjela prijava.");
+
+    // ✅ Mark job as 'Poslano'
+    const KEY = getSavedJobsKey(student.username);
+    const updated = savedJobs.map((j) =>
+      j.name === selectedJob.name ? { ...j, status: "Poslano" } : j
+    );
+    setSavedJobs(updated);
+    localStorage.setItem(KEY, JSON.stringify(updated));
+
+    alert("✅ Prijava poslana!");
+    setSelectedJob(null);
+  } catch (err) {
+    console.error(err);
+    alert("❌ Greška pri slanju prijave!");
+  }
+};
+
+const handleWithdraw = async (job) => {
+  if (!student?.username) return;
+
+  if (!window.confirm(`Želite li se odjaviti s posla: ${job.role} @ ${job.name}?`)) return;
+
+  try {
+    const token = localStorage.getItem("token");
+    const form = new FormData();
+    form.append("username", student.username);
+    form.append("job_name", job.role);
+    if (job.job_id != null) form.append("job_id", String(job.job_id));
+
+    await axios.post("http://127.0.0.1:8000/withdraw_application", form, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+
+    // 1) remove from "Moji poslovi"
+    const KEY = getSavedJobsKey(student.username);
+    const nextSaved = savedJobs.filter((j) => !(j.name === job.name && j.role === job.role));
+    setSavedJobs(nextSaved);
+    localStorage.setItem(KEY, JSON.stringify(nextSaved));
+
+    // 2) unhide in Connect so it can appear again
+    unhideInConnect(job);
+
+    alert("✅ Uspješno ste se odjavili s posla.");
+  } catch (err) {
+    console.error(err);
+    alert("❌ Greška pri odjavi s posla.");
+  }
+};
 
   const handleRemoveJob = (jobName) => {
     const updated = savedJobs.filter((j) => j.name !== jobName);
@@ -278,51 +357,54 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="p-6">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-gray-100 p-8">
       {student ? (
         <>
-          <h2 className="text-3xl font-bold text-blue-600 mb-6">
+          {/* === HEADER === */}
+          <h2 className="text-4xl font-extrabold text-blue-700 mb-10 tracking-tight">
             Dobrodošao, {student?.name?.split(" ")[0] || "student"}!
           </h2>
 
-          {/* PROFIL */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-            {/* LEFT PROFILE CARD */}
-            <div className="bg-white p-5 rounded-lg shadow-md text-center">
+          {/* === PROFILE SECTION === */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
+            {/* LEFT: PROFILE CARD */}
+            <div className="bg-white/90 p-6 rounded-2xl shadow-md hover:shadow-lg transition-all text-center">
               <div className="flex flex-col items-center">
                 {profileImage ? (
                   <img
                     src={profileImage}
                     alt="Profilna slika"
-                    className="w-32 h-32 object-cover rounded-full mb-3 border"
+                    className="w-32 h-32 rounded-full object-cover mb-3 border-4 border-blue-200 shadow"
                   />
                 ) : (
-                  <div className="w-32 h-32 rounded-full bg-gray-200 flex items-center justify-center mb-3">
+                  <div className="w-32 h-32 rounded-full bg-gray-200 flex items-center justify-center mb-3 border border-gray-300">
                     <span className="text-gray-500">Nema slike</span>
                   </div>
                 )}
 
-                <h3 className="text-xl font-semibold">{student.username}</h3>
-                <p className="text-gray-600">{student.university}</p>
-                <p className="text-gray-500 italic mt-1">{student.about}</p>
+                <h3 className="text-xl font-semibold text-gray-800">{student.username}</h3>
+                <p className="text-blue-600 font-medium">{student.university}</p>
+                <p className="text-gray-600 italic mt-2">{student.about}</p>
 
                 {/* Upload & Delete buttons */}
-                <div className="mt-4">
+                <div className="mt-4 space-y-2">
                   <form
                     onSubmit={handleFileUpload}
                     encType="multipart/form-data"
-                    className="flex flex-col items-center"
+                    className="flex flex-col items-center gap-3 w-full"
                   >
-                    <input
-                      type="file"
-                      name="file"
-                      accept=".jpg,.jpeg,.png"
-                      className="mb-2 text-sm"
-                      required
-                    />
+                    <div className="flex flex-col items-center">
+                      <input
+                        type="file"
+                        name="file"
+                        accept=".jpg,.jpeg,.png"
+                        className="text-sm text-gray-700 text-center mx-auto block"
+                        required
+                      />
+                    </div>
                     <button
                       type="submit"
-                      className="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 text-sm"
+                      className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm transition mx-auto"
                     >
                       Postavi sliku
                     </button>
@@ -331,7 +413,7 @@ export default function Dashboard() {
                   {profileImage && (
                     <button
                       onClick={handleDeleteImage}
-                      className="mt-2 bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700 text-sm"
+                      className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm transition"
                     >
                       Ukloni sliku
                     </button>
@@ -340,35 +422,33 @@ export default function Dashboard() {
               </div>
             </div>
 
-            {/* RIGHT EDIT PROFILE */}
-            <div className="bg-white p-5 rounded-lg shadow-md">
-              <h3 className="text-lg font-semibold mb-2">Uredi profil</h3>
+            {/* RIGHT: EDIT PROFILE */}
+            <div className="bg-white/90 p-6 rounded-2xl shadow-md hover:shadow-lg transition-all">
+              <h3 className="text-xl font-bold mb-3 text-gray-800">Uredi profil</h3>
               <form onSubmit={handleProfileUpdate}>
-                <label className="block mb-2 font-medium">O tebi:</label>
+                <label className="block mb-1 font-medium text-gray-700">O tebi:</label>
                 <textarea
                   name="about"
                   defaultValue={student.about}
-                  className="w-full border rounded p-2 mb-3"
+                  className="w-full border border-gray-300 rounded-lg p-2 mb-3 focus:ring-2 focus:ring-blue-400 outline-none"
                 />
-                <label className="block mb-2 font-medium">Fakultet:</label>
+                <label className="block mb-1 font-medium text-gray-700">Fakultet:</label>
                 <input
                   name="university"
                   defaultValue={student.university}
-                  className="w-full border rounded p-2 mb-3"
+                  className="w-full border border-gray-300 rounded-lg p-2 mb-3 focus:ring-2 focus:ring-blue-400 outline-none"
                 />
                 <button
                   type="submit"
-                  className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-md transition font-medium"
                 >
                   Spremi promjene
                 </button>
               </form>
 
-              <hr className="my-4" />
+              <hr className="my-5 border-gray-200" />
 
-              <h3 className="text-lg font-semibold mb-2">Prenesi CV</h3>
-
-              {/* ✅ If user already has a CV, show only download & delete options */}
+              <h3 className="text-lg font-semibold mb-3 text-gray-800">Prenesi CV</h3>
               {student.cv ? (
                 <div className="flex flex-col gap-2">
                   <p className="text-sm text-gray-700">
@@ -391,11 +471,9 @@ export default function Dashboard() {
                       try {
                         const formData = new FormData();
                         formData.append("username", student.username);
-
                         await axios.post("http://127.0.0.1:8000/delete_cv", formData, {
                           headers: { Authorization: `Bearer ${token}` },
                         });
-
                         const updated = { ...student, cv: null };
                         setStudent(updated);
                         localStorage.setItem("student", JSON.stringify(updated));
@@ -405,18 +483,17 @@ export default function Dashboard() {
                         alert("❌ Greška pri brisanju CV-a!");
                       }
                     }}
-                    className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700 text-sm w-fit"
+                    className="bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-md text-xs transition w-fit"
                   >
                     Ukloni CV
                   </button>
                 </div>
               ) : (
-                // ✅ If no CV uploaded yet, show upload form
                 <form onSubmit={handleFileUpload} encType="multipart/form-data">
                   <input type="file" name="file" accept=".pdf" className="mb-2" required />
                   <button
                     type="submit"
-                    className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+                    className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm transition"
                   >
                     Učitaj CV
                   </button>
@@ -425,54 +502,64 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* MOJI POSLOVI */}
-          <div className="bg-white p-5 rounded-lg shadow-md mb-6">
-            <h3 className="text-lg font-semibold mb-4">💼 Moji poslovi</h3>
+          {/* === JOBS SECTION === */}
+          <div className="bg-white/90 p-6 rounded-2xl shadow-md mb-10 hover:shadow-lg transition">
+            <h3 className="text-2xl font-bold mb-4 text-gray-800 flex items-center gap-2">
+              💼 Moji poslovi
+            </h3>
             {savedJobs.length ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {savedJobs.map((job, i) => (
                   <motion.div
                     key={i}
-                    className="border rounded-lg p-4 shadow-sm hover:shadow-md transition-all"
+                    className="border border-gray-200 rounded-xl p-5 bg-white shadow-sm hover:shadow-md transition-transform"
                     whileHover={{ scale: 1.02 }}
                   >
-                    <h4 className="text-xl font-semibold text-blue-700 mb-1">
-                      {job.name}
-                    </h4>
+                    <h4 className="text-xl font-semibold text-blue-700 mb-1">{job.name}</h4>
                     <p className="text-gray-700 font-medium">{job.role}</p>
                     <p className="text-gray-600 text-sm mb-2">{job.details}</p>
-                    <p className="text-green-600 font-semibold mb-2">{job.pay}</p>
+                    <p className="text-green-600 font-semibold mb-3">{job.pay}</p>
                     <div className="flex justify-between items-center">
                       {job.status ? (
-                        <span className="px-2 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
-                          Status: {job.status}
-                        </span>
+                        <>
+                          <span className="px-3 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
+                            Status: {job.status}
+                          </span>
+                          <button
+                            onClick={() => handleWithdraw(job)}
+                            className="text-sm text-red-500 underline hover:text-red-700"
+                          >
+                            Odjavi se
+                          </button>
+                        </>
                       ) : (
-                        <button
-                          onClick={() => handleApply(job)}
-                          className="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700"
-                        >
-                          Prijavi se
-                        </button>
+                        <>
+                          <button
+                            onClick={() => handleApply(job)}
+                            className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-md text-sm transition"
+                          >
+                            Prijavi se
+                          </button>
+                          <button
+                            onClick={() => handleRemoveJob(job.name)}
+                            className="text-sm text-red-500 underline hover:text-red-700"
+                          >
+                            Ukloni
+                          </button>
+                        </>
                       )}
-                      <button
-                        onClick={() => handleRemoveJob(job.name)}
-                        className="text-sm text-red-500 underline"
-                      >
-                        Ukloni
-                      </button>
                     </div>
                   </motion.div>
                 ))}
               </div>
             ) : (
-              <p className="text-gray-500">
+              <p className="text-gray-500 italic">
                 Nema spremljenih poslova. Posjeti „Poveži se” i pronađi priliku!
               </p>
             )}
           </div>
 
-          {/* MODAL ZA PRIJAVU */}
+          {/* === MODAL === */}
           <AnimatePresence>
             {selectedJob && (
               <motion.div
@@ -482,7 +569,7 @@ export default function Dashboard() {
                 exit={{ opacity: 0 }}
               >
                 <motion.div
-                  className="bg-white rounded-xl p-6 shadow-2xl w-full max-w-md"
+                  className="bg-white rounded-xl p-8 shadow-2xl w-full max-w-md"
                   initial={{ scale: 0.8 }}
                   animate={{ scale: 1 }}
                   exit={{ scale: 0.8 }}
@@ -495,10 +582,9 @@ export default function Dashboard() {
                   </p>
 
                   <form onSubmit={handleUploadApplication} className="space-y-4">
-                    {/* CV selection */}
+                    {/* === CV === */}
                     <div className="space-y-2">
                       <label className="block text-sm font-semibold text-gray-700">CV:</label>
-
                       {student?.cv ? (
                         <div className="rounded border p-3 bg-gray-50">
                           <label className="inline-flex items-center gap-2 text-sm">
@@ -524,10 +610,10 @@ export default function Dashboard() {
                                 type="file"
                                 accept=".pdf,.doc,.docx"
                                 onChange={(e) => setFile(e.target.files[0])}
-                                className="border p-2 w-full rounded"
+                                className="border p-2 w-full rounded text-sm"
                               />
                               <p className="text-xs text-gray-500 mt-1">
-                                Ovaj CV se koristi samo za ovu prijavu (ne mijenja tvoj profilni CV).
+                                Ovaj CV se koristi samo za ovu prijavu.
                               </p>
                             </div>
                           )}
@@ -538,17 +624,17 @@ export default function Dashboard() {
                             type="file"
                             accept=".pdf,.doc,.docx"
                             onChange={(e) => setFile(e.target.files[0])}
-                            className="border p-2 w-full rounded"
+                            className="border p-2 w-full rounded text-sm"
                             required
                           />
                           <p className="text-xs text-gray-500 mt-1">
-                            Nemaš spremljeni CV na profilu — učitaj CV za ovu prijavu.
+                            Nemaš spremljeni CV — učitaj CV za ovu prijavu.
                           </p>
                         </div>
                       )}
                     </div>
 
-                    {/* Cover letter */}
+                    {/* === COVER LETTER === */}
                     <div className="space-y-2">
                       <label className="block text-sm font-semibold text-gray-700">
                         Motivacijsko pismo (obavezno):
@@ -557,15 +643,14 @@ export default function Dashboard() {
                         type="file"
                         accept=".pdf,.doc,.docx"
                         onChange={(e) => setCoverLetter(e.target.files[0])}
-                        className="border p-2 w-full rounded"
+                        className="border p-2 w-full rounded text-sm"
                         required
                       />
                     </div>
 
-                    {/* Buttons */}
                     <button
                       type="submit"
-                      className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 w-full"
+                      className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md w-full transition"
                     >
                       Pošalji prijavu
                     </button>
@@ -582,14 +667,17 @@ export default function Dashboard() {
             )}
           </AnimatePresence>
 
-          {/* KALENDAR + DNEVNI PREGLED */}
-          <div className="bg-white p-5 rounded-lg shadow-md mb-6">
-            <h3 className="text-lg font-semibold mb-4">Kalendar</h3>
+          {/* === CALENDAR SECTION === */}
+          <div className="bg-white/90 p-6 rounded-2xl shadow-md hover:shadow-lg transition mb-10">
+            <h3 className="text-2xl font-bold mb-4 text-gray-800 flex items-center gap-2">
+              📅 Kalendar
+            </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* === LEFT: Calendar === */}
               <Calendar
                 onClickDay={(date) => setSelectedDate(date)}
                 value={selectedDate}
+                className="rounded-lg shadow border border-gray-200 bg-white p-2"
                 tileClassName={({ date, view }) => {
                   if (view !== "month") return undefined;
                   const day = date.toISOString().split("T")[0];
@@ -599,18 +687,18 @@ export default function Dashboard() {
                       d.setMinutes(d.getMinutes() + d.getTimezoneOffset());
                       return d.toISOString().split("T")[0] === day;
                     }) || meetings.some((m) => m.date === day);
-                  return hasEvent ? "event-day" : undefined;
+                  return hasEvent ? "event-day bg-blue-100 font-semibold text-blue-700 rounded-full" : undefined;
                 }}
               />
 
               {/* === RIGHT: Selected Day Panel === */}
-              <div className="p-4 border rounded-lg bg-gray-50 relative">
-                <h4 className="text-lg font-semibold mb-2">
+              <div className="p-5 border rounded-xl bg-gray-50 shadow-inner relative">
+                <h4 className="text-xl font-bold mb-3 text-gray-800">
                   Zaduženja za {selectedDate.toLocaleDateString("hr-HR")}
                 </h4>
 
                 {/* === List of all events & meetings === */}
-                <div className="flex flex-col gap-1 max-h-80 overflow-y-auto">
+                <div className="flex flex-col gap-2 max-h-80 overflow-y-auto pr-2">
                   {(() => {
                     const formatted = selectedDate.toISOString().split("T")[0];
                     const dayEvents = events.filter((e) => {
@@ -629,13 +717,16 @@ export default function Dashboard() {
                       );
 
                     return allItems.map((item, i) => (
-                      <div key={i} className="zaduzene-item">
+                      <div
+                        key={i}
+                        className="flex justify-between items-start p-3 bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow transition"
+                      >
                         <div className="text-left">
                           <h5 className="font-semibold text-blue-700 text-sm">
                             {item.title}
                           </h5>
                           {item.description && (
-                            <p className="text-xs text-gray-600">{item.description}</p>
+                            <p className="text-xs text-gray-600 mt-1">{item.description}</p>
                           )}
                         </div>
 
@@ -661,16 +752,13 @@ export default function Dashboard() {
                                   ...student,
                                   events: student.events.filter((id) => id !== item.id),
                                 };
-                                localStorage.setItem(
-                                  "student",
-                                  JSON.stringify(updatedStudent)
-                                );
+                                localStorage.setItem("student", JSON.stringify(updatedStudent));
                                 setStudent(updatedStudent);
 
                                 // ✅ Update events list & UI instantly
                                 const updated = events.filter((e) => e.id !== item.id);
                                 setEvents(updated);
-                                setSelectedDate(new Date(selectedDate)); // refresh UI
+                                setSelectedDate(new Date(selectedDate));
 
                                 alert("✅ Odjavljeni ste s događaja!");
                               } catch (err) {
@@ -678,22 +766,22 @@ export default function Dashboard() {
                                 alert("❌ Greška pri odjavi s događaja.");
                               }
                             }}
-                            className="text-red-600 text-xs hover:underline"
+                            className="text-red-600 text-xs hover:underline font-medium"
                           >
                             Odjavi se
                           </button>
                         ) : (
-                          // === Otherwise it’s a meeting (local) ===
+                          // === Otherwise it's a meeting (local) ===
                           <button
                             onClick={() => {
                               const updated = meetings.filter((m) => m.id !== item.id);
                               setMeetings(updated);
                               const key = `meetings_${student.username}`;
                               localStorage.setItem(key, JSON.stringify(updated));
-                              setSelectedDate(new Date(selectedDate)); // refresh UI
+                              setSelectedDate(new Date(selectedDate));
                               alert("✅ Sastanak uklonjen!");
                             }}
-                            className="text-red-600 text-xs hover:underline"
+                            className="text-red-600 text-xs hover:underline font-medium"
                           >
                             Ukloni
                           </button>
@@ -704,11 +792,11 @@ export default function Dashboard() {
                 </div>
 
                 {/* === Add new meeting === */}
-                <div className="mt-3 border-t pt-2">
+                <div className="mt-4 border-t pt-3">
                   {!isAddingMeeting ? (
                     <button
                       onClick={() => setIsAddingMeeting(true)}
-                      className="flex items-center text-blue-600 hover:text-blue-800 text-sm"
+                      className="flex items-center text-blue-600 hover:text-blue-800 text-sm font-medium"
                     >
                       ➕ Dodaj sastanak
                     </button>
@@ -730,27 +818,27 @@ export default function Dashboard() {
                         setMeetingTitle("");
                         setMeetingDescription("");
                         setIsAddingMeeting(false);
-                        setSelectedDate(new Date(selectedDate)); // refresh UI
+                        setSelectedDate(new Date(selectedDate));
                         alert("✅ Sastanak dodan!");
                       }}
-                      className="mt-2"
+                      className="mt-2 space-y-2"
                     >
                       <input
                         type="text"
                         value={meetingTitle}
                         onChange={(e) => setMeetingTitle(e.target.value)}
                         placeholder="Naslov sastanka"
-                        className="border rounded p-2 w-full mb-2 text-sm"
+                        className="border border-gray-300 rounded-lg p-2 w-full text-sm focus:ring-2 focus:ring-blue-400 outline-none"
                         required
                       />
                       <textarea
                         value={meetingDescription}
                         onChange={(e) => setMeetingDescription(e.target.value)}
                         placeholder="Opis..."
-                        className="border rounded p-2 w-full mb-2 text-sm"
+                        className="border border-gray-300 rounded-lg p-2 w-full text-sm focus:ring-2 focus:ring-blue-400 outline-none"
                         required
                       />
-                      <div className="flex justify-end gap-2">
+                      <div className="flex justify-end gap-3">
                         <button
                           type="button"
                           onClick={() => setIsAddingMeeting(false)}
@@ -760,7 +848,7 @@ export default function Dashboard() {
                         </button>
                         <button
                           type="submit"
-                          className="bg-purple-600 text-white px-3 py-1 rounded text-sm hover:bg-purple-700"
+                          className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-1.5 rounded-md text-sm transition"
                         >
                           Spremi
                         </button>
@@ -772,16 +860,20 @@ export default function Dashboard() {
             </div>
           </div>
 
-
-          <button
-            onClick={handleLogout}
-            className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
-          >
-            Odjava
-          </button>
+          {/* === LOGOUT BUTTON === */}
+          <div className="text-right mt-8">
+            <button
+              onClick={handleLogout}
+              className="bg-red-600 hover:bg-red-700 text-white px-5 py-2 rounded-md font-medium transition"
+            >
+              Odjava
+            </button>
+          </div>
         </>
       ) : (
-        <p>Molimo prijavite se za pristup nadzornoj ploči.</p>
+        <p className="text-gray-700 text-lg text-center">
+          Molimo prijavite se za pristup nadzornoj ploči.
+        </p>
       )}
     </div>
   );

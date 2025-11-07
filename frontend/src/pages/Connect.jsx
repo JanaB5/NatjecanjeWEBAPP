@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import axios from "axios";
 import { motion, AnimatePresence } from "framer-motion";
 import { CheckCircle, XCircle } from "lucide-react";
@@ -21,6 +21,24 @@ export default function Connect() {
   const [loading, setLoading] = useState(false);
   const [showCards, setShowCards] = useState(false);
 
+  useEffect(() => {
+    if (!username) return;
+    const onStorage = () => {
+      setSavedJobs(JSON.parse(localStorage.getItem(`savedJobs_${username}`) || "[]"));
+      setHiddenJobs(JSON.parse(localStorage.getItem(`hiddenJobs_${username}`) || "[]"));
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, [username]);
+
+    // helper: stable key for a job
+  const jobKey = (j) => (j.job_id != null ? `id:${j.job_id}` : `demo:${j.name}|${j.role}`);
+
+  const HIDDEN_KEY = username ? `hiddenJobs_${username}` : null;
+  const [hiddenJobs, setHiddenJobs] = useState(() => {
+    if (!HIDDEN_KEY) return [];
+    return JSON.parse(localStorage.getItem(HIDDEN_KEY) || "[]");
+  });
   // ✅ Dohvati oglase iz firmi
   const fetchData = async () => {
     setLoading(true);
@@ -28,25 +46,43 @@ export default function Connect() {
       const res = await axios.get("http://127.0.0.1:8000/all_company_jobs");
       let allJobs = res.data.jobs || [];
 
-      // Filtriraj po kategoriji (industry)
+      // 🟩 1️⃣ MAP BACKEND FIELDS → WHAT YOUR UI EXPECTS
+      const mapped = allJobs.map((j) => ({
+        name: j.company_name,
+        role: j.title,
+        details: j.description,
+        pay: j.pay || "-",
+        location: j.location || "",
+        faculty: j.faculty || "",
+        // use filename; we'll build full URL only when rendering
+        logo: j.logo || null,
+        job_id: j.job_id,
+        company_username: j.company_username || null,
+        posted_at: j.posted_at || null,
+        category: j.industry || j.category || "",
+      }));
+
+      let filtered = mapped;
+
+      // remove anything the user already saved/hidden
+      const savedKeys = new Set((savedJobs || []).map(jobKey));
+      const hiddenKeys = new Set((hiddenJobs || []).map(String));
+      filtered = filtered.filter((j) => !savedKeys.has(jobKey(j)) && !hiddenKeys.has(jobKey(j)));
+
       if (category) {
-        allJobs = allJobs.filter((j) =>
-          j.category?.toLowerCase().includes(category.toLowerCase())
-        );
+        const c = category.toLowerCase();
+        filtered = filtered.filter((j) => (j.category || "").toLowerCase().includes(c));
       }
-
-      // Filtriraj po fakultetu (ako se koristi)
       if (faculty) {
-        allJobs = allJobs.filter((j) =>
-          j.faculty?.toLowerCase().includes(faculty.toLowerCase())
-        );
+        const f = faculty.toLowerCase();
+        filtered = filtered.filter((j) => {
+          const fields = [j.faculty, j.location].filter(Boolean).map((x) => x.toLowerCase());
+          return fields.some((x) => x.includes(f));
+        });
       }
 
-      if (allJobs.length === 0) {
-        alert("⚠️ Trenutno nema oglasa u ovoj kategoriji.");
-      }
-
-      setResults(allJobs);
+      // 🟩 5️⃣ SAVE RESULTS TO STATE
+      setResults(filtered);
       setCurrentIndex(0);
       setShowCards(true);
     } catch (err) {
@@ -72,10 +108,22 @@ export default function Connect() {
       return;
     }
 
-    const updated = [...savedJobs, job];
-    setSavedJobs(updated);
-    localStorage.setItem(`savedJobs_${username}`, JSON.stringify(updated));
-    handleSkip();
+    // save
+    const updatedSaved = [...savedJobs, job];
+    setSavedJobs(updatedSaved);
+    localStorage.setItem(`savedJobs_${username}`, JSON.stringify(updatedSaved));
+
+    // hide
+    const key = jobKey(job);
+    const updatedHidden = Array.from(new Set([...(hiddenJobs || []), key]));
+    setHiddenJobs(updatedHidden);
+    if (HIDDEN_KEY) localStorage.setItem(HIDDEN_KEY, JSON.stringify(updatedHidden));
+
+    // remove from current deck
+    const nextResults = results.filter((_, idx) => idx !== currentIndex);
+    setResults(nextResults);
+    setCurrentIndex((prev) => (prev >= nextResults.length ? nextResults.length - 1 : prev));
+    if (nextResults.length === 0) setShowCards(false);
   };
 
   const requireLogin = () => {

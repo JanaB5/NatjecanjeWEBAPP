@@ -28,5 +28,37 @@
     "status": "Poslano",
     "created_at": "2025-11-07T03:07:44.952704",
     "updated_at": "2025-11-07T03:07:44.952707"
+  },
+  {
+    "id": 4,
+    "username": "mark",
+    "job_name": "Nastavni Zavod",
+    "cv": "mark_1762514061.568365.pdf",
+    "cover_letter": "mark_1762514187.861911_cover.pdf",
+    "status": "Poslano",
+    "created_at": "2025-11-07T12:16:27.896153",
+    "updated_at": "2025-11-07T12:16:27.896185"
+  },
+  {
+    "id": 5,
+    "username": "mark",
+    "job_name": "Marko",
+    "cv": "mark_1762514061.568365.pdf",
+    "cover_letter": "mark_1762516901.327479_cover.pdf",
+    "status": "Poslano",
+    "created_at": "2025-11-07T13:01:41.332118",
+    "updated_at": "2025-11-07T13:01:41.332159"
+  },
+  {
+    "id": 6,
+    "username": "mark",
+    "job_name": "Trebam assistant ",
+    "company_name": "Marko",
+    "cv": "mark_1762514061.568365.pdf",
+    "cover_letter": "mark_1762527927.654179_cover.pdf",
+    "status": "Accepted",
+    "created_at": "2025-11-07T16:05:27.658450",
+    "updated_at": "2025-11-07T16:07:09.850922",
+    "job_id": 1
   }
 ]
