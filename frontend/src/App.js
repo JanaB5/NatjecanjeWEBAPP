@@ -5,13 +5,15 @@ import Home from "./pages/Home";
 import Savjeti from "./pages/Savjeti";
 import Karijere from "./pages/Karijere";
 import Events from "./pages/Events";
-import Mentorships from "./pages/Mentorships";
+
 import About from "./pages/About";
 import Connect from "./pages/Connect";
 import AIFloatingChat from "./components/AIFloatingChat";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Register from "./pages/Register";
+import CompanyDashboard from "./pages/CompanyDashboard"; // ✅ dodano
+import SearchStudents from "./pages/SearchStudents"; // ✅ NOVO dodano
 
 function RequireAuth({ children }) {
   const token = localStorage.getItem("token");
@@ -30,16 +32,38 @@ function App() {
             <Route path="/savjeti" element={<Savjeti />} />
             <Route path="/karijere" element={<Karijere />} />
             <Route path="/events" element={<Events />} />
-            <Route path="/mentorships" element={<Mentorships />} />
+            
             <Route path="/about" element={<About />} />
             <Route path="/connect" element={<Connect />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+
+            {/* 🎓 Studentski dashboard */}
             <Route
               path="/dashboard"
               element={
                 <RequireAuth>
                   <Dashboard />
+                </RequireAuth>
+              }
+            />
+
+            {/* 🏢 Dashboard za firme */}
+            <Route
+              path="/company-dashboard"
+              element={
+                <RequireAuth>
+                  <CompanyDashboard />
+                </RequireAuth>
+              }
+            />
+
+            {/* 🔍 Pretraga studenata (samo za firme) */}
+            <Route
+              path="/search-students"
+              element={
+                <RequireAuth>
+                  <SearchStudents />
                 </RequireAuth>
               }
             />

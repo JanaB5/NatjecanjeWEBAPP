@@ -1,7 +1,7 @@
 import { useState } from "react";
 import axios from "axios";
 import { motion, AnimatePresence } from "framer-motion";
-import {CheckCircle, XCircle } from "lucide-react";
+import { CheckCircle, XCircle } from "lucide-react";
 
 export default function Connect() {
   const [faculty, setFaculty] = useState("");
@@ -9,7 +9,7 @@ export default function Connect() {
   const [results, setResults] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
 
-  // ✅ Read currently logged-in student from localStorage
+  // ✅ Učitaj trenutno prijavljenog studenta
   const student = JSON.parse(localStorage.getItem("student"));
   const username = student?.username || null;
 
@@ -21,17 +21,37 @@ export default function Connect() {
   const [loading, setLoading] = useState(false);
   const [showCards, setShowCards] = useState(false);
 
+  // ✅ Dohvati oglase iz firmi
   const fetchData = async () => {
     setLoading(true);
     try {
-      const res = await axios.get("http://127.0.0.1:8000/connect_data", {
-        params: { faculty, type: "job", category },
-      });
-      setResults(res.data.results || []);
+      const res = await axios.get("http://127.0.0.1:8000/all_company_jobs");
+      let allJobs = res.data.jobs || [];
+
+      // Filtriraj po kategoriji (industry)
+      if (category) {
+        allJobs = allJobs.filter((j) =>
+          j.category?.toLowerCase().includes(category.toLowerCase())
+        );
+      }
+
+      // Filtriraj po fakultetu (ako se koristi)
+      if (faculty) {
+        allJobs = allJobs.filter((j) =>
+          j.faculty?.toLowerCase().includes(faculty.toLowerCase())
+        );
+      }
+
+      if (allJobs.length === 0) {
+        alert("⚠️ Trenutno nema oglasa u ovoj kategoriji.");
+      }
+
+      setResults(allJobs);
       setCurrentIndex(0);
       setShowCards(true);
-    } catch {
-      alert("Greška pri dohvaćanju podataka!");
+    } catch (err) {
+      console.error("Greška pri dohvaćanju oglasa:", err);
+      alert("⚠️ Greška pri dohvaćanju oglasa!");
     } finally {
       setLoading(false);
     }
@@ -58,7 +78,6 @@ export default function Connect() {
     handleSkip();
   };
 
-  // ✅ Helper: Warn if user isn't signed in
   const requireLogin = () => {
     if (!username) {
       alert("🔒 Morate biti prijavljeni da biste koristili ovu opciju!");
@@ -66,7 +85,6 @@ export default function Connect() {
     }
     return true;
   };
-
 
   return (
     <div
@@ -155,23 +173,32 @@ export default function Connect() {
                 exit={{ opacity: 0, scale: 0.8 }}
                 transition={{ duration: 0.3 }}
               >
-                <h3 className="text-3xl font-bold text-blue-700 mb-2">
-                  {results[currentIndex].name}
-                </h3>
-                <p className="text-lg font-semibold text-gray-800 mb-1">
-                  {results[currentIndex].role}
-                </p>
-                <p className="text-gray-600 mb-4">
+                {/* ✅ Prikaz podataka iz firmi */}
+                <div className="flex flex-col items-center mb-3">
+                  {results[currentIndex].logo && (
+                    <img
+                      src={`http://127.0.0.1:8000/profile_file/${results[currentIndex].logo}`}
+                      alt="logo"
+                      className="w-20 h-20 rounded-full object-cover mb-2 border"
+                    />
+                  )}
+                  <h3 className="text-3xl font-bold text-blue-700 mb-1">
+                    {results[currentIndex].role}
+                  </h3>
+                  <p className="text-lg font-semibold text-gray-800 mb-1">
+                    {results[currentIndex].name}
+                  </p>
+                  <p className="text-gray-600 mb-3">
+                    {results[currentIndex].location}
+                  </p>
+                </div>
+
+                <p className="text-gray-700 mb-4">
                   {results[currentIndex].details}
                 </p>
-                {results[currentIndex].pay !== "-" && (
-                  <p className="text-green-600 font-semibold text-lg mb-2">
-                    💶 {results[currentIndex].pay}
-                  </p>
-                )}
-                <p className="text-gray-500">
-                  🎓 {results[currentIndex].faculty} —{" "}
-                  {results[currentIndex].category}
+
+                <p className="text-gray-500 text-sm">
+                  🌐 {results[currentIndex].category}
                 </p>
               </motion.div>
             ) : (

@@ -17,6 +17,9 @@ load_dotenv()
 OPENAI_KEY = os.getenv("OPENAI_API_KEY")
 SECRET_KEY = os.getenv("SECRET_KEY")
 
+
+
+
 # === Initialize app ===
 app = FastAPI()
 app.add_middleware(
@@ -220,6 +223,18 @@ def load_students():
             json.dump({}, f)
     with open(STUDENTS_FILE, "r", encoding="utf-8") as f:
         return json.load(f)
+COMPANIES_FILE = os.path.join(DATA_DIR, "companies.json")
+
+def load_companies():
+    if not os.path.exists(COMPANIES_FILE):
+        with open(COMPANIES_FILE, "w", encoding="utf-8") as f:
+            json.dump({}, f)
+    with open(COMPANIES_FILE, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+def save_companies(data):
+    with open(COMPANIES_FILE, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
 
 def save_students(data):
     with open(STUDENTS_FILE, "w", encoding="utf-8") as f:
@@ -243,22 +258,323 @@ def get_current_user(credentials: Optional[HTTPAuthorizationCredentials] = Depen
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         username: str = payload.get("sub")
+        role: str = payload.get("role", "student")
         if not username:
             raise HTTPException(status_code=401, detail="Neispravan token")
     except JWTError:
         raise HTTPException(status_code=401, detail="Neispravan ili istekao token")
 
-    students = load_students()
-    user = students.get(username)
-    if not user:
-        raise HTTPException(status_code=401, detail="Korisnik ne postoji")
-    return {"username": username, **{k: v for k, v in user.items() if k != "hashed_password"}}
+    if role == "student":
+        students = load_students()
+        user = students.get(username)
+        if not user:
+            raise HTTPException(status_code=401, detail="Korisnik ne postoji")
+        return {"username": username, "role": "student", **{k: v for k, v in user.items() if k != "hashed_password"}}
+    
+    elif role == "company":
+        companies = load_companies()
+        user = companies.get(username)
+        if not user:
+            raise HTTPException(status_code=401, detail="Tvrtka ne postoji")
+        return {"username": username, "role": "company", **{k: v for k, v in user.items() if k != "hashed_password"}}
+
+    else:
+        raise HTTPException(status_code=401, detail="Nepoznata uloga")
 
 # === Routes ===
 
 @app.get("/")
 def home():
     return {"message": "CareerApp backend running!"}
+
+@app.get("/company/jobs")
+def get_company_jobs(current=Depends(get_current_user)):
+    if current["role"] != "company":
+        raise HTTPException(status_code=403, detail="Samo firme mogu dohvatiti svoje poslove")
+
+    companies = load_companies()
+    company = companies.get(current["username"])
+    if not company:
+        raise HTTPException(status_code=404, detail="Tvrtka nije pronađena")
+
+    return {"jobs": company.get("jobs_posted", [])}
+@app.get("/all_company_jobs")
+def get_all_company_jobs():
+    """Vraća sve poslove koje su firme objavile — u formatu kompatibilnom s connect.json"""
+    companies = load_companies()
+    all_jobs = []
+
+    for key, company in companies.items():
+        jobs = company.get("jobs_posted", [])
+        if not isinstance(jobs, list):
+            continue
+
+        for job in jobs:
+            all_jobs.append({
+                "faculty": "FER",  # ili kasnije možeš dodati pravi fakultet ako želiš
+                "category": company.get("industry", "IT"),
+                "type": "Job",
+                "name": company.get("company_name", key),
+                "role": job.get("title", "N/A"),
+                "pay": "-",
+                "details": job.get("description", ""),
+                "location": job.get("location", ""),
+                "logo": company.get("logo", None),
+                "posted_at": job.get("posted_at", "")
+            })
+
+    # sortiraj po datumu objave (noviji prvi)
+    all_jobs.sort(key=lambda x: x.get("posted_at", ""), reverse=True)
+    return {"jobs": all_jobs}
+
+
+
+
+@app.post("/company/add_job")
+def add_job(
+    title: str = Form(...),
+    description: str = Form(...),
+    location: str = Form(...),
+    current=Depends(get_current_user)
+):
+    if current["role"] != "company":
+        raise HTTPException(status_code=403, detail="Samo firme mogu dodavati poslove")
+
+    companies = load_companies()
+    company = companies[current["username"]]
+
+    new_job = {
+        "id": len(company["jobs_posted"]) + 1,
+        "title": title,
+        "description": description,
+        "location": location,
+        "posted_at": datetime.utcnow().isoformat()
+    }
+    company["jobs_posted"].append(new_job)
+    save_companies(companies)
+    return {"success": True, "job": new_job}
+
+
+@app.post("/register_company")
+def register_company(
+    username: str = Form(...),
+    password: str = Form(...),
+    company_name: str = Form(...),
+    industry: str = Form(...),
+    about: str = Form("")
+):
+    companies = load_companies()
+
+    if username in companies:
+        return {"success": False, "message": "Korisničko ime je zauzeto."}
+
+    companies[username] = {
+        "company_name": company_name,
+        "industry": industry,
+        "about": about,
+        "jobs_posted": [],
+        "hashed_password": hash_password(password[:72]),
+    }
+    save_companies(companies)
+
+    token = create_access_token({"sub": username, "role": "company"})
+    public_data = {k: v for k, v in companies[username].items() if k != "hashed_password"}
+    return {"success": True, "access_token": token, "token_type": "bearer", "company": {"username": username, **public_data}}
+
+@app.post("/login_company")
+def login_company(username: str = Form(...), password: str = Form(...)):
+    companies = load_companies()
+    company = companies.get(username)
+    if not company or not verify_password(password, company.get("hashed_password", "")):
+        return {"success": False, "message": "Pogrešno korisničko ime ili lozinka."}
+
+    token = create_access_token({"sub": username, "role": "company"})
+    public_data = {k: v for k, v in company.items() if k != "hashed_password"}
+    return {"success": True, "access_token": token, "token_type": "bearer", "company": {"username": username, **public_data}}
+@app.post("/company/edit_job")
+def edit_job(
+    job_id: int = Form(...),
+    title: str = Form(...),
+    description: str = Form(...),
+    location: str = Form(...),
+    current=Depends(get_current_user)
+):
+    if current["role"] != "company":
+        raise HTTPException(status_code=403, detail="Samo firme mogu uređivati poslove")
+
+    companies = load_companies()
+    company = companies.get(current["username"])
+    if not company:
+        raise HTTPException(status_code=404, detail="Tvrtka nije pronađena")
+
+    for job in company.get("jobs_posted", []):
+        if job["id"] == job_id:
+            job["title"] = title
+            job["description"] = description
+            job["location"] = location
+            job["updated_at"] = datetime.utcnow().isoformat()
+            save_companies(companies)
+            return {"success": True, "job": job}
+
+    raise HTTPException(status_code=404, detail="Posao nije pronađen")
+@app.post("/company/update_profile")
+def update_company_profile(
+    about: str = Form(""),
+    website: str = Form(""),
+    contact_email: str = Form(""),
+    industry: str = Form(""),
+    file: Optional[UploadFile] = File(None),
+    current=Depends(get_current_user)
+):
+    """Ažurira profil firme (opis, industrija, web, kontakt, logo)"""
+    if current["role"] != "company":
+        raise HTTPException(status_code=403, detail="Samo firme mogu uređivati profil")
+
+    companies = load_companies()
+    company = companies[current["username"]]
+
+    if about:
+        company["about"] = about
+    if website:
+        company["website"] = website
+    if contact_email:
+        company["contact_email"] = contact_email
+    if industry:
+        company["industry"] = industry
+
+    # ✅ spremanje logotipa
+    if file:
+        ext = file.filename.split(".")[-1].lower()
+        if ext not in ["jpg", "jpeg", "png"]:
+            raise HTTPException(status_code=400, detail="Dozvoljeni formati su jpg, jpeg, png.")
+        filename = f"{current['username']}_logo.{ext}"
+        logo_path = os.path.join(PROFILE_DIR, filename)
+        with open(logo_path, "wb") as f:
+            f.write(file.file.read())
+        company["logo"] = filename
+
+    save_companies(companies)
+    return {"success": True, "company": company}
+
+
+# === KALENDAR DOGAĐAJA ===
+@app.get("/company/events")
+def get_company_events(current=Depends(get_current_user)):
+    if current["role"] != "company":
+        raise HTTPException(status_code=403, detail="Samo firme mogu vidjeti svoje događaje")
+
+    companies = load_companies()
+    company = companies[current["username"]]
+    return {"events": company.get("events", [])}
+
+
+@app.post("/company/add_event")
+def add_company_event(
+    title: str = Form(...),
+    date: str = Form(...),
+    current=Depends(get_current_user)
+):
+    if current["role"] != "company":
+        raise HTTPException(status_code=403, detail="Samo firme mogu dodavati događaje")
+
+    companies = load_companies()
+    company = companies[current["username"]]
+
+    if "events" not in company:
+        company["events"] = []
+
+    event_id = len(company["events"]) + 1
+    company["events"].append({"id": event_id, "title": title, "date": date})
+    save_companies(companies)
+    return {"success": True, "event": {"id": event_id, "title": title, "date": date}}
+
+
+@app.post("/company/delete_event")
+def delete_company_event(event_id: int = Form(...), current=Depends(get_current_user)):
+    if current["role"] != "company":
+        raise HTTPException(status_code=403, detail="Samo firme mogu brisati događaje")
+
+    companies = load_companies()
+    company = companies[current["username"]]
+
+    company["events"] = [e for e in company.get("events", []) if e["id"] != event_id]
+    save_companies(companies)
+    return {"success": True}
+@app.get("/all_company_jobs")
+def get_all_company_jobs():
+    """
+    Vraća sve oglase koje su postavile firme.
+    Koristi se na studentskoj stranici 'Poveži se' umjesto connect.json.
+    """
+    companies = load_companies()
+    all_jobs = []
+
+    for username, company in companies.items():
+        for job in company.get("jobs_posted", []):
+            all_jobs.append({
+                "company_username": username,
+                "company_name": company.get("company_name"),
+                "industry": company.get("industry"),
+                "logo": company.get("logo"),
+                "title": job.get("title"),
+                "description": job.get("description"),
+                "location": job.get("location"),
+                "posted_at": job.get("posted_at")
+            })
+
+    # sort po datumu (najnoviji prvi)
+    all_jobs.sort(key=lambda x: x.get("posted_at", ""), reverse=True)
+    return {"jobs": all_jobs}
+
+
+@app.get("/student_public/{username}")
+def get_student_public(username: str, current=Depends(get_current_user)):
+    """Dohvati javni profil studenta (vidljivo firmama)"""
+    if current["role"] != "company":
+        raise HTTPException(status_code=403, detail="Samo firme mogu vidjeti profile studenata")
+
+    students = load_students()
+    student = students.get(username)
+    if not student:
+        raise HTTPException(status_code=404, detail="Student nije pronađen")
+
+    return {
+        "username": username,
+        "name": student.get("name"),
+        "university": student.get("university"),
+        "about": student.get("about"),
+        "profile_image": student.get("profile_image"),
+        "cv": student.get("cv")
+    }
+@app.get("/students")
+def get_students(query: str = "", current=Depends(get_current_user)):
+    """
+    Vraća listu svih studenata za pregled/pretragu (samo za firme).
+    Može se filtrirati po imenu ili fakultetu putem query parametra.
+    """
+    if current["role"] != "company":
+        raise HTTPException(status_code=403, detail="Samo firme mogu pregledavati studente")
+
+    students = load_students()
+    results = []
+
+    for username, data in students.items():
+        if (
+            query.lower() in username.lower()
+            or query.lower() in data.get("name", "").lower()
+            or query.lower() in data.get("university", "").lower()
+        ):
+            results.append({
+                "username": username,
+                "name": data.get("name"),
+                "university": data.get("university"),
+                "about": data.get("about", ""),
+                "profile_image": data.get("profile_image"),
+                "cv": data.get("cv")
+            })
+
+    return {"students": results}
+
 
 # === OpenAI chat route ===
 @app.post("/chat")
@@ -732,3 +1048,60 @@ def add_reply(post_id: int = Form(...), username: str = Form(...), reply: str = 
             save_savjeti(data)
             return {"success": True, "savjet": post}
     return {"success": False, "message": "Post not found."}
+@app.get("/company/stats")
+def get_company_stats(current=Depends(get_current_user)):
+    """
+    Vraća statistiku za dashboard firme:
+    - broj oglasa
+    - broj događaja
+    - broj prijava studenata
+    """
+    if current["role"] != "company":
+        raise HTTPException(status_code=403, detail="Samo firme mogu vidjeti statistiku")
+
+    companies = load_companies()
+    company = companies.get(current["username"], {})
+
+    # Broj poslova
+    jobs = company.get("jobs_posted", [])
+    num_jobs = len(jobs)
+
+    # Broj događaja
+    num_events = len(company.get("events", []))
+
+    # Broj prijava (iz applications.json)
+    applications = load_applications()
+    job_titles = [job["title"] for job in jobs]
+    num_applications = sum(1 for a in applications if a["job_name"] in job_titles)
+
+    return {
+        "success": True,
+        "stats": {
+            "jobs": num_jobs,
+            "events": num_events,
+            "applications": num_applications
+        }
+    }
+
+
+@app.get("/company/applications")
+def get_company_applications(current=Depends(get_current_user)):
+    """
+    Vraća sve prijave studenata na oglase ove firme.
+    """
+    if current["role"] != "company":
+        raise HTTPException(status_code=403, detail="Samo firme mogu vidjeti prijave")
+
+    companies = load_companies()
+    company = companies.get(current["username"])
+    if not company:
+        raise HTTPException(status_code=404, detail="Tvrtka nije pronađena")
+
+    jobs = company.get("jobs_posted", [])
+    job_titles = [job["title"] for job in jobs]
+    applications = load_applications()
+
+    company_apps = [
+        app for app in applications if app["job_name"] in job_titles
+    ]
+    return {"applications": company_apps}
