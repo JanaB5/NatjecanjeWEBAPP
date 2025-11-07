@@ -1,31 +1,35 @@
 [
   {
     "id": 1,
-    "question": "praksa na feru",
+    "question": "Pozdrav, tražim praksu, student sam treće godine na FER-u, gdje je mogu pronaći?",
     "tags": [
       "FER"
     ],
     "replies": [
       {
         "username": "jana",
-        "reply": "mozes naci na job fair-u"
+        "reply": "neke možete pronaći na web stranici FER-a ili možete posjetiti godišnji job fair"
       },
       {
         "username": "marko",
-        "reply": "ok hvala"
+        "reply": "super, hvala!!"
       }
     ]
   },
   {
     "id": 2,
-    "question": "kako da nadem posao",
+    "question": "Pozdrav, kako mogu pronaći posao, student sam pete godine na FER-u.",
     "tags": [
       "FER"
     ],
     "replies": [
       {
         "username": "jana",
-        "reply": "ispod povezi me imas hrpu"
+        "reply": "Nadolazeće događaje možete vidjeti u događajima, u Karijeri možete vidjeti koji karijerni put možete odabrati sa svojim određenim fakultetom i možete se izravno povezati s tvrtkama u poveži se."
+      },
+      {
+        "username": "marko",
+        "reply": "hvalaaa"
       }
     ]
   }

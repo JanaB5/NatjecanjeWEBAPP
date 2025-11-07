@@ -18,13 +18,14 @@
       }
     ]
   },
-  "mark": {
-    "name": "mark mark",
+  "marko": {
+    "name": "Marko Ropar",
     "university": "FER",
-    "about": "Student",
+    "about": "Student sam peta gondina",
     "connections": [],
     "events": [
-      2
+      2,
+      3
     ],
     "hashed_password": "$2b$12$IrRZIYUDzmq3Ir6va61SzOXeB/GnW/ihVWAACC0w4HIjSjLrfczbK",
     "meetings": [

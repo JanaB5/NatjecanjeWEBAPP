@@ -26,6 +26,9 @@ export default function Dashboard() {
   const [notifications, setNotifications] = useState([]);
   const [unread, setUnread] = useState(false);
   const [showNotif, setShowNotif] = useState(false);
+  // after your other useState hooks
+  const [savedJobsReady, setSavedJobsReady] = useState(false);
+
 
   // ✅ Helper for per-user localStorage key
   const getSavedJobsKey = (u) => (u ? `savedJobs_${u}` : "savedJobs_guest");
@@ -111,6 +114,7 @@ export default function Dashboard() {
     // load per-user jobs
     const jobs = JSON.parse(localStorage.getItem(KEY) || "[]");
     setSavedJobs(jobs);
+    setSavedJobsReady(true);               // <-- add this
   }, [student]);
 
   // === Load meetings AFTER username is known (avoids double-run wipe) ===
@@ -131,18 +135,15 @@ export default function Dashboard() {
   // === Pull application statuses from backend and merge into savedJobs ===
   useEffect(() => {
     if (!student?.username) return;
-
+    if (!savedJobsReady) return;           // <-- wait until saved jobs are loaded
+    if (!savedJobs || savedJobs.length === 0) return; // <-- don't overwrite with []
     (async () => {
       try {
-        // no auth needed for this endpoint in your backend
         const res = await api.get(`/applications/${student.username}`);
         const apps = Array.isArray(res.data.applications) ? res.data.applications : [];
-
-        if (!apps.length) return;
+        if (!apps.length) return;          // nothing to merge
 
         const KEY = getSavedJobsKey(student.username);
-
-        // merge statuses by (role=job_name) and (name=company_name)
         const merged = (savedJobs || []).map(j => {
           const hit = apps.find(a =>
             a.job_name?.toLowerCase() === (j.role || "").toLowerCase() &&
@@ -157,8 +158,7 @@ export default function Dashboard() {
         console.error("Failed to pull application statuses:", err);
       }
     })();
-    // re-run when the student changes or jobs list changes
-  }, [student?.username, savedJobs.length]);
+  }, [student?.username, savedJobsReady, savedJobs.length]); // <-- add savedJobsReady
 
   // === Load notifications ===
   useEffect(() => {
@@ -379,16 +379,13 @@ const handleWithdraw = async (job) => {
   }
 };
 
-  const handleRemoveJob = (jobName) => {
-    const updated = savedJobs.filter((j) => j.name !== jobName);
+  const handleRemoveJob = (companyName, role) => {
+    const updated = savedJobs.filter((j) => !(j.name === companyName && j.role === role));
     setSavedJobs(updated);
-
     if (student?.username) {
       const KEY = getSavedJobsKey(student.username);
       localStorage.setItem(KEY, JSON.stringify(updated));
     }
-
-    // 🔔 notify Connect page instantly
     window.dispatchEvent(new Event("storage"));
   };
 
@@ -620,7 +617,7 @@ const handleWithdraw = async (job) => {
                             Prijavi se
                           </button>
                           <button
-                            onClick={() => handleRemoveJob(job.name)}
+                            onClick={() => handleRemoveJob(job.name, job.role)}
                             className="text-sm text-red-500 underline hover:text-red-700"
                           >
                             Ukloni

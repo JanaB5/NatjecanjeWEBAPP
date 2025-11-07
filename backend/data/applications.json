@@ -56,9 +56,9 @@
     "company_name": "Marko",
     "cv": "mark_1762514061.568365.pdf",
     "cover_letter": "mark_1762527927.654179_cover.pdf",
-    "status": "Round 1",
+    "status": "Rejected",
     "created_at": "2025-11-07T16:05:27.658450",
-    "updated_at": "2025-11-07T19:15:52.463210",
+    "updated_at": "2025-11-07T20:49:48.301136",
     "job_id": 1
   },
   {
@@ -71,5 +71,39 @@
     "status": "Poslano",
     "created_at": "2025-11-07T19:15:23.765020",
     "updated_at": "2025-11-07T19:15:23.765047"
+  },
+  {
+    "id": 8,
+    "username": "mark",
+    "job_name": "Elektroinženjer pripravnik",
+    "company_name": "Končar",
+    "cv": "mark_1762514061.568365.pdf",
+    "cover_letter": "mark_1762544402.153678_cover.pdf",
+    "status": "Poslano",
+    "created_at": "2025-11-07T20:40:02.158504",
+    "updated_at": "2025-11-07T20:40:02.158537"
+  },
+  {
+    "id": 9,
+    "username": "marko",
+    "job_name": "Software Intern",
+    "company_name": "Rimac Automobili",
+    "cv": "mark_1762514061.568365.pdf",
+    "cover_letter": "marko_1762544507.510266_cover.pdf",
+    "status": "Poslano",
+    "created_at": "2025-11-07T20:41:47.514911",
+    "updated_at": "2025-11-07T20:41:47.514950"
+  },
+  {
+    "id": 10,
+    "username": "marko",
+    "job_name": "Analitičar podataka",
+    "company_name": "Marko",
+    "cv": "mark_1762514061.568365.pdf",
+    "cover_letter": "marko_1762545078.388861_cover.pdf",
+    "status": "Accepted",
+    "created_at": "2025-11-07T20:51:18.389988",
+    "updated_at": "2025-11-07T20:51:50.364574",
+    "job_id": 3
   }
 ]

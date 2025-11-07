@@ -28,5 +28,17 @@
     "message": "Status tvoje prijave za Trebam assistant  je promijenjen u 'Round 1'.",
     "created_at": "2025-11-07T19:15:52.472686",
     "read": true
+  },
+  {
+    "username": "mark",
+    "message": "Status tvoje prijave za Trebam assistant  je promijenjen u 'Rejected'.",
+    "created_at": "2025-11-07T20:49:48.306206",
+    "read": false
+  },
+  {
+    "username": "marko",
+    "message": "Status tvoje prijave za Analitičar podataka je promijenjen u 'Accepted'.",
+    "created_at": "2025-11-07T20:51:50.370029",
+    "read": true
   }
 ]

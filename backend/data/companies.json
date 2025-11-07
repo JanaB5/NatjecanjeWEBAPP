@@ -39,35 +39,40 @@
   },
   "marko": {
     "company_name": "Marko",
-    "industry": "Marko",
-    "about": "Marko",
+    "industry": "WEB/APP development ",
+    "about": "Ovo je moj startup za unizg careers aplikaciju",
     "jobs_posted": [
       {
         "id": 1,
         "title": "Trebam assistant ",
-        "description": "assistant ",
+        "description": "pomažeš mi u planiranju svakodnevnih zadataka",
         "location": "Zagreb",
         "posted_at": "2025-11-07T12:58:04.426730",
-        "updated_at": "2025-11-07T13:52:11.253236",
-        "pay": "5"
+        "updated_at": "2025-11-07T20:46:41.722115",
+        "pay": "10€/h"
       },
       {
         "id": 2,
-        "title": "asistent",
-        "description": "asistent",
+        "title": "Web Development ",
+        "description": "full stack programer u Pythonu",
         "location": "Zagreb",
-        "pay": "8",
-        "posted_at": "2025-11-07T13:42:20.482910"
+        "pay": "13€/h",
+        "posted_at": "2025-11-07T13:42:20.482910",
+        "updated_at": "2025-11-07T20:47:36.737101"
       },
       {
         "id": 3,
-        "title": "Job",
-        "description": "JOB",
+        "title": "Analitičar podataka",
+        "description": "analizirati podatke i pisati izvješća",
         "location": "Zagreb",
-        "pay": "15",
-        "posted_at": "2025-11-07T15:17:42.386504"
+        "pay": "15€/h",
+        "posted_at": "2025-11-07T15:17:42.386504",
+        "updated_at": "2025-11-07T20:48:36.047607"
       }
     ],
-    "hashed_password": "$2b$12$v65HVLyJ1ZaG062ZG6gfYOZD3cDuR90t1cAJ8eafDW.D1zfJuNwKK"
+    "hashed_password": "$2b$12$v65HVLyJ1ZaG062ZG6gfYOZD3cDuR90t1cAJ8eafDW.D1zfJuNwKK",
+    "logo": "marko_logo.jpg",
+    "website": "unizgcareers.hr",
+    "contact_email": "unizgcareers@gmail.com"
   }
 }
