@@ -343,7 +343,7 @@ def save_savjeti(data):
 
 @app.get("/")
 def home():
-    return {"message": "CareerApp backend running!"}
+    return {"message": "KariLink backend running!"}
 
 @app.get("/company/jobs")
 def get_company_jobs(current=Depends(get_current_user)):

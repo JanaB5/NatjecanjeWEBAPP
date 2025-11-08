@@ -21,7 +21,6 @@ export default function Dashboard() {
   const [file, setFile] = useState(null);
   const [useSavedCV, setUseSavedCV] = useState(true);
   const [coverLetter, setCoverLetter] = useState(null);
-  const location = useLocation();
   // === Notifications ===
   const [notifications, setNotifications] = useState([]);
   const [unread, setUnread] = useState(false);
@@ -135,16 +134,17 @@ export default function Dashboard() {
   // === Pull application statuses from backend and merge into savedJobs ===
   useEffect(() => {
     if (!student?.username) return;
-    if (!savedJobsReady) return;           // <-- wait until saved jobs are loaded
-    if (!savedJobs || savedJobs.length === 0) return; // <-- don't overwrite with []
+    if (!savedJobsReady) return;
+    if (!savedJobs || savedJobs.length === 0) return;
+
     (async () => {
       try {
         const res = await api.get(`/applications/${student.username}`);
         const apps = Array.isArray(res.data.applications) ? res.data.applications : [];
-        if (!apps.length) return;          // nothing to merge
+        if (!apps.length) return;
 
         const KEY = getSavedJobsKey(student.username);
-        const merged = (savedJobs || []).map(j => {
+        const merged = savedJobs.map(j => {
           const hit = apps.find(a =>
             a.job_name?.toLowerCase() === (j.role || "").toLowerCase() &&
             (a.company_name || "").toLowerCase() === (j.name || "").toLowerCase()
@@ -158,7 +158,7 @@ export default function Dashboard() {
         console.error("Failed to pull application statuses:", err);
       }
     })();
-  }, [student?.username, savedJobsReady, savedJobs.length]); // <-- add savedJobsReady
+  }, [student?.username, savedJobsReady, savedJobs]);  // ✅ add savedJobs here
 
   // === Load notifications ===
   useEffect(() => {

@@ -20,7 +20,7 @@ export default function Chatbot() {
 
   return (
     <div className="max-w-xl mx-auto mt-8 p-5 bg-white rounded-lg shadow">
-      <h2 className="text-2xl font-bold mb-4 text-center text-blue-600">AI Career Assistant</h2>
+      <h2 className="text-2xl font-bold mb-4 text-center text-blue-600">AI Karijerni Asistent</h2>
 
       <div className="h-80 overflow-y-auto border p-3 mb-3 bg-gray-50 rounded">
         {chat.map((m, i) => (

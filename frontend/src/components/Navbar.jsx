@@ -1,5 +1,6 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
+import { motion } from "framer-motion";
 
 export default function Navbar() {
   const { pathname } = useLocation();
@@ -7,19 +8,12 @@ export default function Navbar() {
 
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [role, setRole] = useState(null);
-  const [student, setStudent] = useState(null);
-  const [company, setCompany] = useState(null);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
     const userRole = localStorage.getItem("role");
-    const studentData = JSON.parse(localStorage.getItem("student"));
-    const companyData = JSON.parse(localStorage.getItem("company"));
-
     setIsLoggedIn(!!token);
     setRole(userRole);
-    setStudent(studentData);
-    setCompany(companyData);
   }, [pathname]);
 
   const handleLogout = () => {
@@ -32,94 +26,150 @@ export default function Navbar() {
   };
 
   const linkClass = (path) =>
-    `px-3 py-2 rounded-md text-sm font-medium ${
+    `relative px-3 py-2 text-sm font-medium transition-colors duration-200 ${
       pathname === path
-        ? "bg-blue-600 text-white"
-        : "text-gray-700 hover:bg-blue-100 hover:text-blue-600"
+        ? "text-blue-700 font-semibold"
+        : "text-gray-700 hover:text-blue-600"
     }`;
 
-  // 🔹 Odredi dashboard rutu prema ulozi
   const dashboardPath =
     role === "company" ? "/company-dashboard" : "/dashboard";
 
   return (
-    <nav className="bg-white shadow-md">
-      <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
-        <Link to="/" className="text-2xl font-bold text-blue-600">
-          CareerApp
+    <motion.nav
+      className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-blue-100 shadow-sm"
+      initial={{ y: -40, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      transition={{ duration: 0.4 }}
+    >
+      <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+        {/* Logo */}
+        <Link
+          to="/"
+          className="text-2xl font-extrabold text-blue-600 tracking-tight hover:opacity-90 transition"
+        >
+          Kari<span className="text-blue-500">Link</span>
         </Link>
 
-        <div className="flex space-x-2">
-          {/* 🔹 Ako je prijavljena firma — vidi samo O nama, Pretraži studente i Dashboard */}
+        {/* Links */}
+        <div className="flex items-center space-x-3">
           {isLoggedIn && role === "company" ? (
             <>
               <Link to="/about" className={linkClass("/about")}>
                 O nama
+                {pathname === "/about" && (
+                  <motion.div
+                    layoutId="underline"
+                    className="absolute bottom-0 left-0 right-0 h-[2px] bg-blue-600 rounded-full"
+                  />
+                )}
               </Link>
-              <Link to="/search-students" className={linkClass("/search-students")}>
+
+              <Link
+                to="/search-students"
+                className={linkClass("/search-students")}
+              >
                 Pretraži studente
+                {pathname === "/search-students" && (
+                  <motion.div
+                    layoutId="underline"
+                    className="absolute bottom-0 left-0 right-0 h-[2px] bg-blue-600 rounded-full"
+                  />
+                )}
               </Link>
+
               <Link
                 to={dashboardPath}
-                className="bg-purple-600 text-white px-3 py-1 rounded hover:bg-purple-700"
+                className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-4 py-2 rounded-full text-sm font-medium shadow hover:shadow-md hover:scale-[1.02] transition"
               >
                 Dashboard
               </Link>
+
               <button
                 onClick={handleLogout}
-                className="border border-red-600 text-red-600 px-3 py-1 rounded hover:bg-red-600 hover:text-white"
+                className="border border-red-600 text-red-600 px-4 py-2 rounded-full text-sm font-medium hover:bg-red-600 hover:text-white transition"
               >
                 Odjava
               </button>
             </>
           ) : (
             <>
-              {/* 🔹 Originalni linkovi za studente */}
               <Link to="/about" className={linkClass("/about")}>
                 O nama
-              </Link>
-              <Link to="/savjeti" className={linkClass("/savjeti")}>
-                Savjeti
-              </Link>
-              <Link to="/events" className={linkClass("/events")}>
-                Događaji
-              </Link>
-              <Link to="/karijere" className={linkClass("/karijere")}>
-                Karijere
-              </Link>
-              
-              <Link to="/connect" className={linkClass("/connect")}>
-                Poveži se
+                {pathname === "/about" && (
+                  <motion.div
+                    layoutId="underline"
+                    className="absolute bottom-0 left-0 right-0 h-[2px] bg-blue-600 rounded-full"
+                  />
+                )}
               </Link>
 
-              {!isLoggedIn && (
+              <Link to="/savjeti" className={linkClass("/savjeti")}>
+                Savjeti
+                {pathname === "/savjeti" && (
+                  <motion.div
+                    layoutId="underline"
+                    className="absolute bottom-0 left-0 right-0 h-[2px] bg-blue-600 rounded-full"
+                  />
+                )}
+              </Link>
+
+              <Link to="/events" className={linkClass("/events")}>
+                Događaji
+                {pathname === "/events" && (
+                  <motion.div
+                    layoutId="underline"
+                    className="absolute bottom-0 left-0 right-0 h-[2px] bg-blue-600 rounded-full"
+                  />
+                )}
+              </Link>
+
+              <Link to="/karijere" className={linkClass("/karijere")}>
+                Karijere
+                {pathname === "/karijere" && (
+                  <motion.div
+                    layoutId="underline"
+                    className="absolute bottom-0 left-0 right-0 h-[2px] bg-blue-600 rounded-full"
+                  />
+                )}
+              </Link>
+
+              <Link to="/connect" className={linkClass("/connect")}>
+                Poveži se
+                {pathname === "/connect" && (
+                  <motion.div
+                    layoutId="underline"
+                    className="absolute bottom-0 left-0 right-0 h-[2px] bg-blue-600 rounded-full"
+                  />
+                )}
+              </Link>
+
+              {!isLoggedIn ? (
                 <>
                   <Link
                     to="/login"
-                    className="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700"
+                    className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-4 py-2 rounded-full text-sm font-medium shadow hover:shadow-md hover:scale-[1.02] transition"
                   >
                     Prijava
                   </Link>
                   <Link
                     to="/register"
-                    className="border border-blue-600 text-blue-600 px-3 py-1 rounded hover:bg-blue-50"
+                    className="border border-blue-600 text-blue-600 px-4 py-2 rounded-full text-sm font-medium hover:bg-blue-50 transition"
                   >
                     Registracija
                   </Link>
                 </>
-              )}
-
-              {isLoggedIn && (
+              ) : (
                 <>
                   <Link
                     to={dashboardPath}
-                    className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700"
+                    className="bg-green-600 text-white px-4 py-2 rounded-full text-sm font-medium shadow hover:bg-green-700 transition"
                   >
                     Dashboard
                   </Link>
                   <button
                     onClick={handleLogout}
-                    className="border border-red-600 text-red-600 px-3 py-1 rounded hover:bg-red-600 hover:text-white"
+                    className="border border-red-600 text-red-600 px-4 py-2 rounded-full text-sm font-medium hover:bg-red-600 hover:text-white transition"
                   >
                     Odjava
                   </button>
@@ -129,6 +179,6 @@ export default function Navbar() {
           )}
         </div>
       </div>
-    </nav>
+    </motion.nav>
   );
 }

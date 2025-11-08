@@ -8,8 +8,6 @@ export default function Connect() {
   const [category, setCategory] = useState("");
   const [results, setResults] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
-
-  // ✅ Učitaj trenutno prijavljenog studenta
   const student = JSON.parse(localStorage.getItem("student"));
   const username = student?.username || null;
 
@@ -20,6 +18,11 @@ export default function Connect() {
 
   const [loading, setLoading] = useState(false);
   const [showCards, setShowCards] = useState(false);
+  const HIDDEN_KEY = username ? `hiddenJobs_${username}` : null;
+  const [hiddenJobs, setHiddenJobs] = useState(() => {
+    if (!HIDDEN_KEY) return [];
+    return JSON.parse(localStorage.getItem(HIDDEN_KEY) || "[]");
+  });
 
   useEffect(() => {
     if (!username) return;
@@ -31,22 +34,13 @@ export default function Connect() {
     return () => window.removeEventListener("storage", onStorage);
   }, [username]);
 
-    // helper: stable key for a job
   const jobKey = (j) => (j.job_id != null ? `id:${j.job_id}` : `demo:${j.name}|${j.role}`);
 
-  const HIDDEN_KEY = username ? `hiddenJobs_${username}` : null;
-  const [hiddenJobs, setHiddenJobs] = useState(() => {
-    if (!HIDDEN_KEY) return [];
-    return JSON.parse(localStorage.getItem(HIDDEN_KEY) || "[]");
-  });
-  // ✅ Dohvati oglase iz firmi
   const fetchData = async () => {
     setLoading(true);
     try {
       const res = await axios.get("http://127.0.0.1:8000/all_company_jobs");
       let allJobs = res.data.jobs || [];
-
-      // 🟩 1️⃣ MAP BACKEND FIELDS → WHAT YOUR UI EXPECTS
       const mapped = allJobs.map((j) => ({
         name: j.company_name,
         role: j.title,
@@ -54,7 +48,6 @@ export default function Connect() {
         pay: j.pay || "-",
         location: j.location || "",
         faculty: j.faculty || "",
-        // use filename; we'll build full URL only when rendering
         logo: j.logo || null,
         job_id: j.job_id,
         company_username: j.company_username || null,
@@ -62,12 +55,11 @@ export default function Connect() {
         category: j.industry || j.category || "",
       }));
 
-      let filtered = mapped;
-
-      // remove anything the user already saved/hidden
       const savedKeys = new Set((savedJobs || []).map(jobKey));
       const hiddenKeys = new Set((hiddenJobs || []).map(String));
-      filtered = filtered.filter((j) => !savedKeys.has(jobKey(j)) && !hiddenKeys.has(jobKey(j)));
+      let filtered = mapped.filter(
+        (j) => !savedKeys.has(jobKey(j)) && !hiddenKeys.has(jobKey(j))
+      );
 
       if (category) {
         const c = category.toLowerCase();
@@ -81,7 +73,6 @@ export default function Connect() {
         });
       }
 
-      // 🟩 5️⃣ SAVE RESULTS TO STATE
       setResults(filtered);
       setCurrentIndex(0);
       setShowCards(true);
@@ -94,11 +85,8 @@ export default function Connect() {
   };
 
   const handleSkip = () => {
-    if (currentIndex < results.length - 1) {
-      setCurrentIndex((prev) => prev + 1);
-    } else {
-      setShowCards(false);
-    }
+    if (currentIndex < results.length - 1) setCurrentIndex((prev) => prev + 1);
+    else setShowCards(false);
   };
 
   const handleSave = () => {
@@ -108,18 +96,15 @@ export default function Connect() {
       return;
     }
 
-    // save
     const updatedSaved = [...savedJobs, job];
     setSavedJobs(updatedSaved);
     localStorage.setItem(`savedJobs_${username}`, JSON.stringify(updatedSaved));
 
-    // hide
     const key = jobKey(job);
     const updatedHidden = Array.from(new Set([...(hiddenJobs || []), key]));
     setHiddenJobs(updatedHidden);
     if (HIDDEN_KEY) localStorage.setItem(HIDDEN_KEY, JSON.stringify(updatedHidden));
 
-    // remove from current deck
     const nextResults = results.filter((_, idx) => idx !== currentIndex);
     setResults(nextResults);
     setCurrentIndex((prev) => (prev >= nextResults.length ? nextResults.length - 1 : prev));
@@ -136,30 +121,38 @@ export default function Connect() {
 
   return (
     <div
-      className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 p-6 flex flex-col justify-center items-center"
+      className="min-h-screen flex flex-col justify-center items-center relative overflow-hidden p-6"
       style={{
         backgroundImage:
-          "url('https://images.unsplash.com/photo-1504384308090-c894fdcc538d')",
+          "url('https://images.unsplash.com/photo-1504384308090-c894fdcc538d?auto=format&fit=crop&w=1600&q=80')",
         backgroundSize: "cover",
         backgroundPosition: "center",
       }}
     >
+      {/* Animated background overlay */}
+      <motion.div
+        className="absolute inset-0 bg-blue-900/40 backdrop-blur-[2px] z-0"
+        animate={{ opacity: [0.6, 0.7, 0.6] }}
+        transition={{ repeat: Infinity, duration: 6 }}
+      />
+
       {!showCards ? (
         <motion.div
-          className="bg-white/80 backdrop-blur-md p-8 rounded-xl shadow-xl w-full max-w-4xl"
-          initial={{ opacity: 0, y: 20 }}
+          className="relative z-10 bg-white/90 backdrop-blur-xl p-10 rounded-3xl shadow-2xl max-w-4xl w-full border border-blue-100"
+          initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8 }}
         >
-          <h2 className="text-4xl font-bold text-blue-700 mb-6 text-center">
-            Career Connect Portal
+          <h2 className="text-4xl md:text-5xl font-extrabold text-blue-700 mb-8 text-center drop-shadow-sm">
+            Karijerni portal
           </h2>
 
-          {/* FILTERI */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          {/* Dropdown filters */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
             <div>
-              <label className="block font-semibold mb-1">Fakultet:</label>
+              <label className="block font-semibold text-gray-800 mb-2">Fakultet:</label>
               <select
-                className="border rounded px-3 py-2 w-full"
+                className="border border-blue-200 rounded-lg px-4 py-3 w-full shadow-sm focus:ring-2 focus:ring-blue-500 outline-none"
                 value={faculty}
                 onChange={(e) => setFaculty(e.target.value)}
               >
@@ -171,11 +164,10 @@ export default function Connect() {
                 <option value="FAR">FAR</option>
               </select>
             </div>
-
             <div>
-              <label className="block font-semibold mb-1">Područje:</label>
+              <label className="block font-semibold text-gray-800 mb-2">Područje:</label>
               <select
-                className="border rounded px-3 py-2 w-full"
+                className="border border-blue-200 rounded-lg px-4 py-3 w-full shadow-sm focus:ring-2 focus:ring-blue-500 outline-none"
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
               >
@@ -195,39 +187,46 @@ export default function Connect() {
             </div>
           </div>
 
-          <button
+          <motion.button
             onClick={fetchData}
             disabled={loading}
-            className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition-all w-full md:w-auto"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            className="bg-gradient-to-r from-blue-600 to-blue-700 text-white font-semibold px-8 py-3 rounded-full shadow-lg hover:shadow-2xl transition-all w-full md:w-auto mx-auto block"
           >
             {loading ? "Pretražujem..." : "Poveži me"}
-          </button>
+          </motion.button>
 
           {username && savedJobs.length > 0 && (
-            <div className="mt-6 bg-green-50 border border-green-200 p-3 rounded text-green-700">
-              ✅ Spremljeno poslova: <b>{savedJobs.length}</b>
-            </div>
+            <motion.div
+              className="mt-6 bg-green-50 border border-green-200 p-4 rounded-xl text-green-700 flex items-center justify-center gap-2"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.3 }}
+            >
+              <CheckCircle className="text-green-600" size={20} />
+              Spremljeno poslova: <b>{savedJobs.length}</b>
+            </motion.div>
           )}
         </motion.div>
       ) : (
-        <div className="relative w-full max-w-3xl flex flex-col items-center justify-center">
+        <div className="relative z-10 w-full max-w-3xl flex flex-col items-center justify-center">
           <AnimatePresence>
             {results[currentIndex] ? (
               <motion.div
                 key={currentIndex}
-                className="bg-white/90 backdrop-blur-md p-8 rounded-2xl shadow-2xl w-full text-center"
-                initial={{ opacity: 0, scale: 0.8 }}
+                className="bg-white/90 backdrop-blur-lg p-10 rounded-3xl shadow-2xl w-full text-center border border-blue-100"
+                initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.8 }}
-                transition={{ duration: 0.3 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                transition={{ duration: 0.4 }}
               >
-                {/* ✅ Prikaz podataka iz firmi */}
-                <div className="flex flex-col items-center mb-3">
+                <div className="flex flex-col items-center mb-4">
                   {results[currentIndex].logo && (
                     <img
                       src={`http://127.0.0.1:8000/profile_file/${results[currentIndex].logo}`}
                       alt="logo"
-                      className="w-20 h-20 rounded-full object-cover mb-2 border"
+                      className="w-24 h-24 rounded-full object-cover mb-3 border-4 border-blue-100 shadow-md"
                     />
                   )}
                   <h3 className="text-3xl font-bold text-blue-700 mb-1">
@@ -236,22 +235,20 @@ export default function Connect() {
                   <p className="text-lg font-semibold text-gray-800 mb-1">
                     {results[currentIndex].name}
                   </p>
-                  <p className="text-gray-600 mb-3">
-                    {results[currentIndex].location}
-                  </p>
+                  <p className="text-gray-600 mb-3">{results[currentIndex].location}</p>
                 </div>
 
-                <p className="text-gray-700 mb-4">
+                <p className="text-gray-700 mb-6 leading-relaxed">
                   {results[currentIndex].details}
                 </p>
 
-                <p className="text-gray-500 text-sm">
+                <p className="text-gray-500 text-sm italic">
                   🌐 {results[currentIndex].category}
                 </p>
               </motion.div>
             ) : (
               <motion.div
-                className="bg-white/90 p-8 rounded-2xl shadow-xl text-center"
+                className="bg-white/90 p-10 rounded-3xl shadow-xl text-center border border-blue-100"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
               >
@@ -260,7 +257,7 @@ export default function Connect() {
                 </h3>
                 <button
                   onClick={() => setShowCards(false)}
-                  className="mt-4 bg-blue-600 text-white px-5 py-2 rounded hover:bg-blue-700"
+                  className="mt-5 bg-blue-600 text-white px-6 py-2 rounded-full hover:bg-blue-700 shadow-md"
                 >
                   ↩️ Povratak na filtere
                 </button>
@@ -268,30 +265,34 @@ export default function Connect() {
             )}
           </AnimatePresence>
 
-          {/* STRELICE */}
+          {/* Action buttons */}
           {results[currentIndex] && (
             <div className="flex gap-16 mt-8">
-              <button
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.9 }}
                 onClick={() => {
                   if (!requireLogin()) return;
                   handleSkip();
                 }}
-                className="bg-red-100 text-red-600 rounded-full p-5 hover:bg-red-200 transition-all"
+                className="bg-red-100 text-red-600 rounded-full p-5 hover:bg-red-200 shadow-md transition-all"
                 title="Ne zanima me"
               >
                 <XCircle size={36} />
-              </button>
+              </motion.button>
 
-              <button
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.9 }}
                 onClick={() => {
                   if (!requireLogin()) return;
                   handleSave();
                 }}
-                className="bg-green-100 text-green-600 rounded-full p-5 hover:bg-green-200 transition-all"
+                className="bg-green-100 text-green-600 rounded-full p-5 hover:bg-green-200 shadow-md transition-all"
                 title="Spremi posao"
               >
                 <CheckCircle size={36} />
-              </button>
+              </motion.button>
             </div>
           )}
         </div>

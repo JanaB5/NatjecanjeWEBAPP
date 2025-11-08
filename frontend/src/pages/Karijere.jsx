@@ -23,75 +23,149 @@ export default function Karijere() {
     fetchData();
   }, []);
 
-  if (loading) return <p>Učitavanje...</p>;
-  if (error) return <p className="text-red-600">{error}</p>;
+  if (loading)
+    return (
+      <div className="flex justify-center items-center min-h-screen text-blue-600 font-semibold text-xl">
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ repeat: Infinity, duration: 1 }}
+          className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full mr-3"
+        ></motion.div>
+        Učitavanje...
+      </div>
+    );
+
+  if (error) return <p className="text-red-600 text-center mt-10">{error}</p>;
 
   const facultyNames = Object.keys(faculties);
   const selectedData = faculties[selectedFaculty];
 
   return (
-    <div className="p-6">
+    <div className="relative min-h-screen bg-gradient-to-b from-blue-50 to-white py-16 overflow-hidden">
+      {/* Decorative background shapes */}
+      <motion.div
+        className="absolute -top-20 -left-20 w-96 h-96 bg-blue-300/20 rounded-full blur-3xl"
+        animate={{ y: [0, 40, 0] }}
+        transition={{ repeat: Infinity, duration: 8 }}
+      />
+      <motion.div
+        className="absolute -bottom-32 -right-24 w-96 h-96 bg-yellow-200/30 rounded-full blur-3xl"
+        animate={{ y: [0, -40, 0] }}
+        transition={{ repeat: Infinity, duration: 10 }}
+      />
+
       {/* === Intro Section === */}
-      <div className="text-center mb-10">
-        <h2 className="text-4xl font-bold text-blue-700 mb-4">Karijere po fakultetima</h2>
-        <p className="text-gray-700 max-w-3xl mx-auto">
-          Sveučilište u Zagrebu okuplja brojne fakultete koji nude različite mogućnosti za
-          razvoj karijere. Istraži svoje mogućnosti, saznaj više o fakultetima i poslušaj
-          riječi mentora koji oblikuju buduće lidere.
+      <motion.div
+        className="text-center mb-14 relative z-10"
+        initial={{ opacity: 0, y: -30 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 1 }}
+      >
+        <h2 className="text-5xl font-extrabold text-blue-700 mb-4 drop-shadow-md">
+          Karijere po fakultetima
+        </h2>
+        <p className="text-gray-600 text-lg max-w-3xl mx-auto leading-relaxed">
+          Sveučilište u Zagrebu okuplja brojne fakultete koji nude različite mogućnosti
+          za razvoj karijere. Istraži svoje mogućnosti, saznaj više o fakultetima i
+          poslušaj riječi mentora koji oblikuju buduće lidere.
         </p>
-      </div>
+      </motion.div>
 
       {/* === Faculty Tabs === */}
-      <div className="flex flex-wrap justify-center gap-3 mb-8">
+      <motion.div
+        className="flex flex-wrap justify-center gap-4 mb-12 relative z-10"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 1 }}
+      >
         {facultyNames.map((f) => (
-          <button
+          <motion.button
             key={f}
             onClick={() => setSelectedFaculty(f)}
-            className={`px-4 py-2 rounded-full font-medium transition-all ${
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.95 }}
+            className={`px-6 py-3 rounded-full font-semibold text-lg transition-all shadow-sm ${
               selectedFaculty === f
-                ? "bg-blue-600 text-white shadow-lg"
-                : "bg-gray-100 hover:bg-blue-100 text-blue-700"
+                ? "bg-blue-600 text-white shadow-xl scale-105"
+                : "bg-white text-blue-700 border border-blue-200 hover:bg-blue-100"
             }`}
           >
             {f}
-          </button>
+          </motion.button>
         ))}
-      </div>
+      </motion.div>
 
       {/* === Selected Faculty Info === */}
-      {selectedFaculty && selectedData && (
+      {selectedFaculty && selectedData ? (
         <motion.div
           key={selectedFaculty}
-          initial={{ opacity: 0, y: 10 }}
+          initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
-          className="bg-white shadow-md rounded-xl p-6 max-w-4xl mx-auto"
+          transition={{ duration: 0.7 }}
+          className="relative z-10 max-w-5xl mx-auto bg-white rounded-3xl shadow-2xl p-10 border border-blue-100"
         >
-          <h3 className="text-2xl font-bold text-blue-700 mb-3">{selectedFaculty}</h3>
-          <p className="text-gray-700 mb-6">{selectedData.about}</p>
+          <motion.h3
+            className="text-3xl font-bold text-blue-700 mb-4"
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+          >
+            {selectedFaculty}
+          </motion.h3>
 
-          <h4 className="text-lg font-semibold text-gray-800 mb-2">💼 Moguće karijere:</h4>
-          <ul className="space-y-2 mb-6">
+          <motion.p
+            className="text-gray-700 mb-8 text-lg leading-relaxed"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.3 }}
+          >
+            {selectedData.about}
+          </motion.p>
+
+          <motion.h4
+            className="text-xl font-semibold text-gray-800 mb-4 flex items-center gap-2"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.4 }}
+          >
+            💼 Moguće karijere:
+          </motion.h4>
+
+          <motion.ul
+            className="grid sm:grid-cols-2 gap-4 mb-8"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.5 }}
+          >
             {selectedData.careers.map((career, i) => (
-              <li
+              <motion.li
                 key={i}
-                className="bg-gray-50 border-l-4 border-blue-500 p-3 rounded shadow-sm"
+                className="bg-gradient-to-r from-blue-50 to-blue-100 border-l-4 border-blue-500 p-4 rounded-xl shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300"
+                whileHover={{ scale: 1.03 }}
               >
-                {career}
-              </li>
+                <span className="font-medium text-gray-800">{career}</span>
+              </motion.li>
             ))}
-          </ul>
+          </motion.ul>
 
-          <blockquote className="italic text-gray-600 border-l-4 border-yellow-400 pl-4">
-            {selectedData.mentor_quote}
-          </blockquote>
+          <motion.blockquote
+            className="italic text-gray-700 bg-yellow-50 border-l-4 border-yellow-400 pl-5 py-3 rounded-md shadow-inner"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.6 }}
+          >
+            “{selectedData.mentor_quote}”
+          </motion.blockquote>
         </motion.div>
-      )}
-
-      {!selectedFaculty && (
-        <p className="text-center text-gray-500 italic mt-10">
+      ) : (
+        <motion.p
+          className="text-center text-gray-500 italic mt-10 text-lg"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 1 }}
+        >
           Odaberi fakultet kako bi saznao više o karijerama i mentorima.
-        </p>
+        </motion.p>
       )}
     </div>
   );

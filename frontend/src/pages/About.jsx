@@ -22,7 +22,7 @@ export default function About() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3, duration: 0.8 }}
           >
-            O aplikaciji <span className="text-yellow-300">CareerApp</span>
+            O aplikaciji <span className="text-yellow-300">KariLink</span>
           </motion.h1>
           <motion.p
             className="text-lg md:text-xl text-blue-100 max-w-2xl mx-auto leading-relaxed"
@@ -30,7 +30,7 @@ export default function About() {
             animate={{ opacity: 1 }}
             transition={{ delay: 0.6, duration: 1 }}
           >
-            CareerApp povezuje studente Sveučilišta u Zagrebu s prilikama za razvoj karijere, mentorstva i profesionalno usmjeravanje.
+            KariLink povezuje studente Sveučilišta u Zagrebu s prilikama za razvoj karijere, mentorstva i profesionalno usmjeravanje.
           </motion.p>
         </div>
       </motion.section>
@@ -45,7 +45,7 @@ export default function About() {
       >
         <h2 className="text-3xl font-bold text-blue-600 mb-4">Naša misija</h2>
         <p className="text-gray-700 mb-4 leading-relaxed">
-          CareerApp je inovativna web aplikacija koju su razvili studenti Fakulteta elektrotehnike i računarstva (FER) Sveučilišta u Zagrebu,
+          KariLink je inovativna web aplikacija koju su razvili studenti Fakulteta elektrotehnike i računarstva (FER) Sveučilišta u Zagrebu,
           s ciljem jačanja povezanosti akademske zajednice i tržišta rada.
         </p>
         <p className="text-gray-700 leading-relaxed">
@@ -161,7 +161,7 @@ export default function About() {
         transition={{ duration: 1 }}
       >
         <p>
-          © {new Date().getFullYear()} CareerApp — projekt studenata Sveučilišta u Zagrebu.
+          © {new Date().getFullYear()} KariLink — projekt studenata Sveučilišta u Zagrebu.
         </p>
         <p className="mt-1 text-gray-400">
           Izrađeno s 💙 uz React, FastAPI i AI asistenciju.
