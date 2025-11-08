@@ -80,16 +80,6 @@ export default function Home() {
           />
         ))}
       </div>
-
-      {/* FOOTER / CREDIT */}
-      <motion.footer
-        className="absolute bottom-6 text-center text-blue-100 text-sm"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 1.2, duration: 1 }}
-      >
-        Izrađeno s 💙 uz React, FastAPI i AI asistenciju.
-      </motion.footer>
     </div>
   );
 }

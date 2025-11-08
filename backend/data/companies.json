@@ -1,22 +1,26 @@
 {
   "info": {
     "company_name": "infobip",
-    "industry": "it",
+    "industry": "IT",
     "about": "Infobip je globalna IT i telekomunikacijska tvrtka koja pruža usluge mobilnih komunikacija u oblaku (cloud) za poslovne korisnike. Portfelj čine profesionalna rješenja za obradu i dostavu SMS i voice poruka, telefonskih poziva, push notifikacija, e-maila te poruka putem popularnih messaging aplikacija. Na popisu klijenata su društvene mreže, internetske kompanije, mobilne messaging aplikacije, banke, marketinške agencije i korporacije,[2][3] kao i neprofitne organizacije i javne ustanove",
     "jobs_posted": [
       {
         "id": 1,
         "title": "IT technical",
-        "description": "bla bla",
+        "description": "Providing technical support and maintaining IT systems within Infobip’s dynamic environment.",
         "location": "Zagreb",
-        "posted_at": "2025-11-07T01:54:40.597711"
+        "posted_at": "2025-11-07T01:54:40.597711",
+        "pay": "15€/h",
+        "updated_at": "2025-11-08T09:51:23.632210"
       },
       {
         "id": 2,
         "title": "Developer",
-        "description": "bla bla",
+        "description": "Designing and developing innovative software solutions as part of Infobip’s engineering team.",
         "location": "Zagreb",
-        "posted_at": "2025-11-07T02:56:08.890213"
+        "posted_at": "2025-11-07T02:56:08.890213",
+        "pay": "12€/h",
+        "updated_at": "2025-11-08T09:52:04.642684"
       }
     ],
     "hashed_password": "$2b$12$IShFmfRinG1YnrkWGDhe7OxmY9mZZG/5u40/ddlOhTxU9YqR9V106",
@@ -28,7 +32,8 @@
       }
     ],
     "logo": "info_logo.png",
-    "contact_email": "infobip@gmail.com"
+    "contact_email": "infobip@gmail.com",
+    "website": "https://www.infobip.com/"
   },
   "info2": {
     "company_name": "e",
